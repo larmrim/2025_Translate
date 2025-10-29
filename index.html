@@ -270,7 +270,7 @@
                     <i class="fas fa-language"></i>
                     口語化翻譯結果
                 </div>
-                <textarea id="outputText" class="textarea" placeholder="翻譯結果將顯示在這裡..." readonly></textarea>
+                <textarea id="outputText" class="textarea" style="height: 500px;" placeholder="翻譯結果將顯示在這裡..." readonly></textarea>
             </div>
 
             <div class="controls">
@@ -300,6 +300,7 @@
         </div>
     </div>
 
+    <script src="js/buddhist_search.js"></script>
     <script src="js/translator.js"></script>
     <script>
 
@@ -321,14 +322,94 @@
             alert('翻譯結果已複製到剪貼簿！');
         }
 
+        // 自動搜尋解釋並填入
+        function tryAutoFillExplanation() {
+            const inputText = document.getElementById('inputText').value.trim();
+            const explanationField = document.getElementById('oralExplanation');
+            
+            if (!inputText || inputText.length < 5) {
+                return;
+            }
+            
+            // 如果已經有手動輸入的解釋，不自動覆蓋
+            if (explanationField.value.trim().length > 0) {
+                return;
+            }
+            
+            // 嘗試自動搜尋
+            if (typeof buddhistSearcher !== 'undefined' && buddhistSearcher) {
+                const explanation = buddhistSearcher.getExplanation(inputText);
+                if (explanation) {
+                    explanationField.value = explanation;
+                    // 顯示提示
+                    showNotification('已自動填入佛學大師的解釋', 'success');
+                }
+            }
+        }
+
+        // 顯示通知
+        function showNotification(message, type = 'info') {
+            // 創建通知元素
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#4CAF50' : '#2196F3'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 5px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                z-index: 10000;
+                font-size: 14px;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // 3秒後自動移除
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.3s';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
         // 事件監聽器
-        document.getElementById('translateBtn').addEventListener('click', translateText);
+        document.getElementById('translateBtn').addEventListener('click', function() {
+            // 翻譯前先嘗試自動填入解釋
+            tryAutoFillExplanation();
+            translateText();
+        });
         document.getElementById('clearBtn').addEventListener('click', clearContent);
         document.getElementById('copyBtn').addEventListener('click', copyResult);
+        
+        // 當輸入佛法經文時，自動嘗試填入解釋（延遲1秒避免頻繁觸發）
+        let autoFillTimer = null;
+        document.getElementById('inputText').addEventListener('input', function() {
+            clearTimeout(autoFillTimer);
+            autoFillTimer = setTimeout(() => {
+                // 等待資料載入完成後再執行
+                if (typeof buddhistSearcher !== 'undefined' && buddhistSearcher) {
+                    tryAutoFillExplanation();
+                } else {
+                    // 如果資料還在載入，等待一下
+                    setTimeout(() => {
+                        if (typeof buddhistSearcher !== 'undefined' && buddhistSearcher) {
+                            tryAutoFillExplanation();
+                        }
+                    }, 1000);
+                }
+            }, 1000);
+        });
 
         // 快捷鍵支援
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'Enter') {
+                tryAutoFillExplanation();
                 translateText();
             }
         });
