@@ -211,11 +211,12 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
 - 保持原文語氣和情感
 - 最後產生逐字/詞的翻譯
 - 不用分段落
+- 只輸出整理後的白話文，不要重複附上大師解釋
 
 請翻譯以下古文：
 
 古文：${text}
-${oralExplanation ? `用戶理解：${oralExplanation}` : ''}
+${oralExplanation ? `參考佛學大師的口語化解釋：${oralExplanation}` : ''}
 
 請提供口語化、準確、流暢、易懂的現代翻譯。`
                         }]
