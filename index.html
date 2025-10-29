@@ -327,23 +327,36 @@
             const inputText = document.getElementById('inputText').value.trim();
             const explanationField = document.getElementById('oralExplanation');
             
+            console.log('🔍 嘗試自動填入解釋，輸入長度：', inputText.length);
+            
             if (!inputText || inputText.length < 5) {
+                console.log('❌ 輸入文字太短，跳過');
                 return;
             }
             
             // 如果已經有手動輸入的解釋，不自動覆蓋
             if (explanationField.value.trim().length > 0) {
+                console.log('⚠️ 已有手動輸入，不覆蓋');
                 return;
             }
             
+            // 檢查搜尋器是否已載入
+            if (typeof buddhistSearcher === 'undefined' || !buddhistSearcher) {
+                console.warn('⚠️ 佛法資料尚未載入完成');
+                return;
+            }
+            
+            console.log('✅ 開始搜尋解釋...');
             // 嘗試自動搜尋
-            if (typeof buddhistSearcher !== 'undefined' && buddhistSearcher) {
-                const explanation = buddhistSearcher.getExplanation(inputText);
-                if (explanation) {
-                    explanationField.value = explanation;
-                    // 顯示提示
-                    showNotification('已自動填入佛學大師的解釋', 'success');
-                }
+            const explanation = buddhistSearcher.getExplanation(inputText);
+            
+            if (explanation) {
+                explanationField.value = explanation;
+                console.log('✅ 已自動填入解釋，長度：', explanation.length);
+                // 顯示提示
+                showNotification('✅ 已自動填入佛學大師的解釋', 'success');
+            } else {
+                console.log('❌ 未找到匹配的解釋');
             }
         }
 
