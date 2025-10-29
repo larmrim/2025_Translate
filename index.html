@@ -241,8 +241,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-scroll"></i> 古文翻譯 AI</h1>
-            <p>結合口語解釋與 Google Gemini AI，讓古文翻譯更準確、流暢、易懂</p>
+            <h1><i class="fas fa-scroll"></i> 佛法翻譯 AI</h1>
+            <p>結合口語解釋與 Google Gemini AI，讓佛法翻譯更準確、流暢、易懂</p>
             <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;">⚠️ 免費配額有限，建議適度使用</p>
         </div>
 
@@ -253,15 +253,15 @@
                         <i class="fas fa-comment-dots"></i>
                         口語解釋
                     </div>
-                    <textarea id="oralExplanation" class="textarea" placeholder="請輸入您對這段古文的初步理解或口語解釋...&#10;&#10;例如：&#10;這句是說學習要經常複習，這樣會很快樂"></textarea>
+                    <textarea id="oralExplanation" class="textarea" placeholder="請輸入您對這段佛法的初步理解或口語解釋...&#10;&#10;例如：&#10;這句是說聽到『常住』這兩個字，就能生生世世不墮惡趣"></textarea>
                 </div>
 
                 <div class="input-section">
                     <div class="section-title">
                         <i class="fas fa-edit"></i>
-                        輸入古文
+                        輸入佛法
                     </div>
-                    <textarea id="inputText" class="textarea" placeholder="請在此輸入您想要翻譯的古文...&#10;&#10;例如：&#10;子曰：「學而時習之，不亦說乎？」"></textarea>
+                    <textarea id="inputText" class="textarea" placeholder="請在此輸入您想要翻譯的佛法經文...&#10;&#10;例如：&#10;《歸敬儀》云：「經云：若人得聞常住二字，是人生生不墮惡趣。」"></textarea>
                 </div>
             </div>
 
@@ -293,67 +293,15 @@
                 <p>AI 正在翻譯中，請稍候...</p>
             </div>
 
-            <div class="examples">
-                <h3><i class="fas fa-lightbulb"></i> 範例古文與口語解釋</h3>
-                <div class="example-item" onclick="loadExample(0)">
-                    <div class="example-text"><strong>口語解釋：</strong>這句是說學習要經常複習，這樣會很快樂</div>
-                    <div class="example-text"><strong>古文：</strong>子曰：「學而時習之，不亦說乎？」</div>
-                    <div class="example-translation"><strong>翻譯：</strong>孔子說：「學習並且按時複習，不是很愉快嗎？」</div>
-                </div>
-                <div class="example-item" onclick="loadExample(1)">
-                    <div class="example-text"><strong>口語解釋：</strong>有朋友從很遠的地方來拜訪，這不是很開心的事嗎？</div>
-                    <div class="example-text"><strong>古文：</strong>有朋自遠方來，不亦樂乎？</div>
-                    <div class="example-translation"><strong>翻譯：</strong>有朋友從遠方來，不是很快樂嗎？</div>
-                </div>
-                <div class="example-item" onclick="loadExample(2)">
-                    <div class="example-text"><strong>口語解釋：</strong>別人不懂我，我也不會生氣，這樣的人不就是君子嗎？</div>
-                    <div class="example-text"><strong>古文：</strong>人不知而不慍，不亦君子乎？</div>
-                    <div class="example-translation"><strong>翻譯：</strong>別人不了解自己而不生氣，不也是君子嗎？</div>
-                </div>
-                <div class="example-item" onclick="loadExample(3)">
-                    <div class="example-text"><strong>口語解釋：</strong>自己不喜歡的事情，就不要強迫別人去做</div>
-                    <div class="example-text"><strong>古文：</strong>己所不欲，勿施於人。</div>
-                    <div class="example-translation"><strong>翻譯：</strong>自己不想要的，不要強加給別人。</div>
-                </div>
-            </div>
         </div>
 
         <div class="footer">
-            <p>&copy; 2025 Translate - 讓古文學習更簡單</p>
+            <p>&copy; 2025 Translate - 讓佛法學習更簡單</p>
         </div>
     </div>
 
     <script src="js/translator.js"></script>
     <script>
-        const examples = [
-            {
-                oralExplanation: "這句是說學習要經常複習，這樣會很快樂",
-                text: "子曰：「學而時習之，不亦說乎？」",
-                translation: "孔子說：「學習並且按時複習，不是很愉快嗎？」"
-            },
-            {
-                oralExplanation: "有朋友從很遠的地方來拜訪，這不是很開心的事嗎？",
-                text: "有朋自遠方來，不亦樂乎？",
-                translation: "有朋友從遠方來，不是很快樂嗎？"
-            },
-            {
-                oralExplanation: "別人不懂我，我也不會生氣，這樣的人不就是君子嗎？",
-                text: "人不知而不慍，不亦君子乎？",
-                translation: "別人不了解自己而不生氣，不也是君子嗎？"
-            },
-            {
-                oralExplanation: "自己不喜歡的事情，就不要強迫別人去做",
-                text: "己所不欲，勿施於人。",
-                translation: "自己不想要的，不要強加給別人。"
-            }
-        ];
-
-        function loadExample(index) {
-            const example = examples[index];
-            document.getElementById('oralExplanation').value = example.oralExplanation;
-            document.getElementById('inputText').value = example.text;
-            document.getElementById('outputText').value = example.translation;
-        }
 
         function clearContent() {
             document.getElementById('oralExplanation').value = '';

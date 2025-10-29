@@ -48,9 +48,9 @@ class AncientTextTranslator {
                         },
                         {
                             role: 'user',
-                            content: `請翻譯以下古文：
+                            content: `請翻譯以下佛法：
 
-古文：${text}
+佛法：${text}
 ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
 
 請提供口語化、準確、流暢、易懂的現代翻譯。`
@@ -199,7 +199,7 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `你是古文兼佛法的翻譯專家，將古代的佛學用語或文言文翻譯成現代口語化白話文。
+                            text: `你是佛法翻譯專家，將古代的佛學用語或文言文翻譯成現代口語化白話文。
 
 要求：
 1. 準確：忠實原文意思
@@ -217,9 +217,9 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
 - 逐字/詞的翻譯
 - 不要使用任何 Markdown 格式符號（如 **、*、# 等）
 
-請翻譯以下古文：
+請翻譯以下佛法：
 
-古文：${text}
+佛法：${text}
 ${oralExplanation ? `參考佛學大師的口語化解釋：${oralExplanation}` : ''}
 
 請提供口語化、準確、流暢、易懂的現代翻譯。`
@@ -324,9 +324,9 @@ ${oralExplanation ? `參考佛學大師的口語化解釋：${oralExplanation}` 
                         },
                         {
                             role: 'user',
-                            content: `請翻譯以下古文：
+                            content: `請翻譯以下佛法：
 
-古文：${text}
+佛法：${text}
 ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
 
 請提供口語化、準確、流暢、易懂的現代翻譯。`
