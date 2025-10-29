@@ -261,11 +261,24 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
 
             const data = await response.json();
             
-            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-                return data.candidates[0].content.parts[0].text.trim();
+            // 更寬鬆的回應解析邏輯
+            if (data.candidates && data.candidates.length > 0) {
+                const candidate = data.candidates[0];
+                
+                // 檢查不同的回應結構
+                if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+                    return candidate.content.parts[0].text.trim();
+                } else if (candidate.text) {
+                    return candidate.text.trim();
+                } else if (candidate.parts && candidate.parts.length > 0) {
+                    return candidate.parts[0].text.trim();
+                } else {
+                    console.error('Unexpected candidate structure:', candidate);
+                    throw new Error('Gemini API 回應格式異常：無法解析候選回應');
+                }
             } else {
                 console.error('Unexpected Gemini response format:', data);
-                throw new Error('Gemini API 回應格式異常');
+                throw new Error('Gemini API 回應格式異常：沒有候選回應');
             }
         } catch (error) {
             console.error('Gemini translation error:', error);
