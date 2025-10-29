@@ -199,7 +199,7 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `你是佛法翻譯專家，將古代的佛學用語或文言文翻譯成現代口語化白話文。
+                            text: `你是佛法翻譯專家，參考佛學大師的口語化解釋，將古代的佛學用語或文言文翻譯成現代口語化白話文。
 
 要求：
 1. 準確：忠實原文意思
@@ -307,7 +307,7 @@ ${oralExplanation ? `參考佛學大師的口語化解釋：${oralExplanation}` 
                     messages: [
                         {
                             role: 'system',
-                            content: `你是一個專業的古文翻譯專家，專精於將古文翻譯成現代口語化的白話文。
+                            content: `你是佛法翻譯專家，將古代的佛學用語或文言文翻譯成現代口語化白話文。
 
 翻譯要求：
 1. **準確性**：忠實於原文意思，不添加或刪減內容
