@@ -10,7 +10,7 @@ class AncientTextTranslator {
         this.huggingfaceToken = null; // Hugging Face Token
         this.deepseekKey = null; // DeepSeek API Key
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
-        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
         this.deepseekUrl = 'https://api.deepseek.com/v1/chat/completions';
         this.freeServices = {
             huggingface: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium'
@@ -78,13 +78,13 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
         try {
             const models = await this.listGeminiModels();
             
-            // 優先選擇配額較寬鬆的模型
+            // 優先選擇配額較寬鬆且確實可用的模型
             const preferredModels = [
-                'gemini-1.5-flash',
-                'gemini-1.5-pro',
-                'gemini-2.5-flash',
-                'gemini-2.5-pro-preview-03-25',
-                'gemini-pro'
+                'gemini-pro',           // 最穩定且配額較寬鬆
+                'gemini-1.5-flash',     // 如果支援的話
+                'gemini-1.5-pro',       // 如果支援的話
+                'gemini-2.5-flash',     // 如果支援的話
+                'gemini-2.5-pro-preview-03-25'  // 備用選項
             ];
             
             for (const preferredModel of preferredModels) {
