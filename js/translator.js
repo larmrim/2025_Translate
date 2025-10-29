@@ -290,6 +290,14 @@ function setupOpenAIKey() {
     const hasAccount = confirm('您是否已經有 OpenAI 帳號？\n\n點擊「確定」：已有帳號，直接輸入 API Key\n點擊「取消」：沒有帳號，前往註冊');
     
     if (hasAccount) {
+        // 提供快速導航選項
+        const quickNav = confirm('需要快速導航到 API Keys 頁面嗎？\n\n點擊「確定」：開啟 API Keys 頁面\n點擊「取消」：直接輸入 API Key');
+        
+        if (quickNav) {
+            window.open('https://platform.openai.com/api-keys', '_blank');
+            alert('已開啟 API Keys 頁面！\n\n請：\n1. 點擊 "Create new secret key"\n2. 複製 API Key（只顯示一次！）\n3. 回到這裡輸入 API Key');
+        }
+        
         const apiKey = prompt('請輸入您的 OpenAI API Key：');
         if (apiKey && apiKey.startsWith('sk-')) {
             translator.apiKey = apiKey;
@@ -300,7 +308,7 @@ function setupOpenAIKey() {
     } else {
         // 開啟註冊頁面
         const registerWindow = window.open('https://platform.openai.com/signup', '_blank');
-        alert('已開啟 OpenAI 註冊頁面。\n\n註冊完成後，請：\n1. 前往 https://platform.openai.com/api-keys\n2. 點擊 "Create new secret key"\n3. 複製 API Key\n4. 重新點擊「設置 API Key」按鈕');
+        alert('已開啟 OpenAI 註冊頁面。\n\n註冊完成後，請：\n1. 前往 https://platform.openai.com/api-keys\n2. 點擊 "Create new secret key"\n3. 複製 API Key（只顯示一次！）\n4. 重新點擊「設置 API Key」按鈕');
     }
 }
 
