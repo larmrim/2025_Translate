@@ -223,10 +223,10 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
                         }]
                     }],
                     generationConfig: {
-                        temperature: 0.2,
-                        maxOutputTokens: 1000,
-                        topP: 0.8,
-                        topK: 40
+                        temperature: 0.3,
+                        maxOutputTokens: 2000,
+                        topP: 0.9,
+                        topK: 50
                     },
                     safetySettings: [
                         {
@@ -272,6 +272,10 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
                     return candidate.text.trim();
                 } else if (candidate.parts && candidate.parts.length > 0) {
                     return candidate.parts[0].text.trim();
+                } else if (candidate.content && candidate.content.role === 'model') {
+                    // 處理只有 role 沒有 parts 的情況
+                    console.warn('Gemini API 回應只有 role 沒有 parts，可能是 token 限制或模型問題');
+                    throw new Error('Gemini API 回應不完整：可能是 token 限制或模型問題，請嘗試縮短輸入文字或使用其他模型');
                 } else {
                     console.error('Unexpected candidate structure:', candidate);
                     throw new Error('Gemini API 回應格式異常：無法解析候選回應');
