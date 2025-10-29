@@ -24,7 +24,7 @@
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 40px rgba(65, 0, 0, 0.1);
             overflow: hidden;
         }
 
@@ -65,9 +65,18 @@
             transition: all 0.3s ease;
         }
 
-        .input-section:hover, .output-section:hover {
+        .input-section:hover, .output-section:hover, .output-section-full:hover {
             border-color: #667eea;
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .output-section-full {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
         }
 
         .section-title {
@@ -233,11 +242,19 @@
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-scroll"></i> 古文翻譯 AI</h1>
-            <p>運用人工智慧技術，讓古文翻譯變得簡單易懂</p>
+            <p>結合口語解釋與人工智慧，讓古文翻譯更準確、流暢、易懂</p>
         </div>
 
         <div class="main-content">
             <div class="translation-section">
+                <div class="input-section">
+                    <div class="section-title">
+                        <i class="fas fa-comment-dots"></i>
+                        口語解釋
+                    </div>
+                    <textarea id="oralExplanation" class="textarea" placeholder="請輸入您對這段古文的初步理解或口語解釋...&#10;&#10;例如：&#10;這句是說學習要經常複習，這樣會很快樂"></textarea>
+                </div>
+
                 <div class="input-section">
                     <div class="section-title">
                         <i class="fas fa-edit"></i>
@@ -245,14 +262,14 @@
                     </div>
                     <textarea id="inputText" class="textarea" placeholder="請在此輸入您想要翻譯的古文...&#10;&#10;例如：&#10;子曰：「學而時習之，不亦說乎？」"></textarea>
                 </div>
+            </div>
 
-                <div class="output-section">
-                    <div class="section-title">
-                        <i class="fas fa-language"></i>
-                        現代翻譯
-                    </div>
-                    <textarea id="outputText" class="textarea" placeholder="翻譯結果將顯示在這裡..." readonly></textarea>
+            <div class="output-section-full">
+                <div class="section-title">
+                    <i class="fas fa-language"></i>
+                    口語化翻譯結果
                 </div>
+                <textarea id="outputText" class="textarea" placeholder="翻譯結果將顯示在這裡..." readonly></textarea>
             </div>
 
             <div class="controls">
@@ -276,22 +293,26 @@
             </div>
 
             <div class="examples">
-                <h3><i class="fas fa-lightbulb"></i> 範例古文</h3>
+                <h3><i class="fas fa-lightbulb"></i> 範例古文與口語解釋</h3>
                 <div class="example-item" onclick="loadExample(0)">
-                    <div class="example-text">子曰：「學而時習之，不亦說乎？」</div>
-                    <div class="example-translation">孔子說：「學習並且按時複習，不是很愉快嗎？」</div>
+                    <div class="example-text"><strong>口語解釋：</strong>這句是說學習要經常複習，這樣會很快樂</div>
+                    <div class="example-text"><strong>古文：</strong>子曰：「學而時習之，不亦說乎？」</div>
+                    <div class="example-translation"><strong>翻譯：</strong>孔子說：「學習並且按時複習，不是很愉快嗎？」</div>
                 </div>
                 <div class="example-item" onclick="loadExample(1)">
-                    <div class="example-text">有朋自遠方來，不亦樂乎？</div>
-                    <div class="example-translation">有朋友從遠方來，不是很快樂嗎？</div>
+                    <div class="example-text"><strong>口語解釋：</strong>有朋友從很遠的地方來拜訪，這不是很開心的事嗎？</div>
+                    <div class="example-text"><strong>古文：</strong>有朋自遠方來，不亦樂乎？</div>
+                    <div class="example-translation"><strong>翻譯：</strong>有朋友從遠方來，不是很快樂嗎？</div>
                 </div>
                 <div class="example-item" onclick="loadExample(2)">
-                    <div class="example-text">人不知而不慍，不亦君子乎？</div>
-                    <div class="example-translation">別人不了解自己而不生氣，不也是君子嗎？</div>
+                    <div class="example-text"><strong>口語解釋：</strong>別人不懂我，我也不會生氣，這樣的人不就是君子嗎？</div>
+                    <div class="example-text"><strong>古文：</strong>人不知而不慍，不亦君子乎？</div>
+                    <div class="example-translation"><strong>翻譯：</strong>別人不了解自己而不生氣，不也是君子嗎？</div>
                 </div>
                 <div class="example-item" onclick="loadExample(3)">
-                    <div class="example-text">己所不欲，勿施於人。</div>
-                    <div class="example-translation">自己不想要的，不要強加給別人。</div>
+                    <div class="example-text"><strong>口語解釋：</strong>自己不喜歡的事情，就不要強迫別人去做</div>
+                    <div class="example-text"><strong>古文：</strong>己所不欲，勿施於人。</div>
+                    <div class="example-translation"><strong>翻譯：</strong>自己不想要的，不要強加給別人。</div>
                 </div>
             </div>
         </div>
@@ -305,18 +326,22 @@
     <script>
         const examples = [
             {
+                oralExplanation: "這句是說學習要經常複習，這樣會很快樂",
                 text: "子曰：「學而時習之，不亦說乎？」",
                 translation: "孔子說：「學習並且按時複習，不是很愉快嗎？」"
             },
             {
+                oralExplanation: "有朋友從很遠的地方來拜訪，這不是很開心的事嗎？",
                 text: "有朋自遠方來，不亦樂乎？",
                 translation: "有朋友從遠方來，不是很快樂嗎？"
             },
             {
+                oralExplanation: "別人不懂我，我也不會生氣，這樣的人不就是君子嗎？",
                 text: "人不知而不慍，不亦君子乎？",
                 translation: "別人不了解自己而不生氣，不也是君子嗎？"
             },
             {
+                oralExplanation: "自己不喜歡的事情，就不要強迫別人去做",
                 text: "己所不欲，勿施於人。",
                 translation: "自己不想要的，不要強加給別人。"
             }
@@ -324,11 +349,13 @@
 
         function loadExample(index) {
             const example = examples[index];
+            document.getElementById('oralExplanation').value = example.oralExplanation;
             document.getElementById('inputText').value = example.text;
             document.getElementById('outputText').value = example.translation;
         }
 
         function clearContent() {
+            document.getElementById('oralExplanation').value = '';
             document.getElementById('inputText').value = '';
             document.getElementById('outputText').value = '';
         }

@@ -5,7 +5,7 @@ class AncientTextTranslator {
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
     }
 
-    async translate(text) {
+    async translate(text, oralExplanation = '') {
         try {
             // 使用 OpenAI API 進行古文翻譯
             const response = await fetch(this.baseUrl, {
@@ -19,15 +19,33 @@ class AncientTextTranslator {
                     messages: [
                         {
                             role: 'system',
-                            content: '你是一個專業的古文翻譯專家。請將輸入的古文翻譯成現代白話文，要求準確、流暢、易懂。'
+                            content: `你是一個專業的古文翻譯專家，專精於將古文翻譯成現代口語化的白話文。
+
+翻譯要求：
+1. **準確性**：忠實於原文意思，不添加或刪減內容
+2. **口語化**：使用現代人日常對話的語調和用詞
+3. **流暢性**：語句自然通順，符合現代中文表達習慣
+4. **易懂性**：避免過於文雅的詞彙，讓一般人都能理解
+
+翻譯風格：
+- 使用「你」、「我」、「我們」等現代人稱
+- 適當使用「啊」、「呢」、「吧」等語氣詞
+- 保持原文的語氣和情感色彩
+- 如果原文是疑問句，保持疑問語氣
+- 如果原文是感嘆句，保持感嘆語氣`
                         },
                         {
                             role: 'user',
-                            content: `請翻譯以下古文：${text}`
+                            content: `請翻譯以下古文：
+
+古文：${text}
+${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
+
+請提供口語化、準確、流暢、易懂的現代翻譯。`
                         }
                     ],
-                    max_tokens: 500,
-                    temperature: 0.3
+                    max_tokens: 600,
+                    temperature: 0.2
                 })
             });
 
@@ -44,7 +62,7 @@ class AncientTextTranslator {
     }
 
     // 備用翻譯方法 - 使用本地規則
-    async translateWithRules(text) {
+    async translateWithRules(text, oralExplanation = '') {
         const rules = {
             // 常見古文詞彙對照
             '子曰': '孔子說',
@@ -70,6 +88,11 @@ class AncientTextTranslator {
             result = result.replace(new RegExp(ancient, 'g'), modern);
         }
 
+        // 如果有口語解釋，嘗試結合
+        if (oralExplanation) {
+            result = `${result}\n\n（結合您的理解：${oralExplanation}）`;
+        }
+
         return result + '（規則翻譯結果）';
     }
 }
@@ -80,6 +103,8 @@ const translator = new AncientTextTranslator();
 // 更新翻譯函數
 async function translateText() {
     const inputText = document.getElementById('inputText').value.trim();
+    const oralExplanation = document.getElementById('oralExplanation').value.trim();
+    
     if (!inputText) {
         alert('請輸入要翻譯的古文！');
         return;
@@ -97,17 +122,17 @@ async function translateText() {
         
         // 嘗試使用 AI API
         if (translator.apiKey) {
-            translation = await translator.translate(inputText);
+            translation = await translator.translate(inputText, oralExplanation);
         } else {
             // 使用規則翻譯作為備用
-            translation = await translator.translateWithRules(inputText);
+            translation = await translator.translateWithRules(inputText, oralExplanation);
         }
         
         outputText.value = translation;
     } catch (error) {
         // 如果 AI API 失敗，使用規則翻譯
         try {
-            const fallbackTranslation = await translator.translateWithRules(inputText);
+            const fallbackTranslation = await translator.translateWithRules(inputText, oralExplanation);
             outputText.value = fallbackTranslation;
         } catch (fallbackError) {
             outputText.value = '翻譯失敗，請稍後再試。';
