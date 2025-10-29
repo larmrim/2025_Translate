@@ -141,6 +141,48 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
         }
     }
 
+    // 獲取當前使用的 Gemini API Key
+    getCurrentGeminiKey() {
+        return this.geminiKeys[this.currentGeminiKeyIndex];
+    }
+
+    // 切換到下一個 Gemini API Key
+    switchToNextGeminiKey() {
+        this.currentGeminiKeyIndex = (this.currentGeminiKeyIndex + 1) % this.geminiKeys.length;
+        console.log(`切換到 Key ${this.currentGeminiKeyIndex + 1}/${this.geminiKeys.length}`);
+    }
+
+    // 測試所有 Gemini API Keys 的可用性
+    async testAllGeminiKeys() {
+        const results = [];
+        
+        for (let i = 0; i < this.geminiKeys.length; i++) {
+            const originalIndex = this.currentGeminiKeyIndex;
+            this.currentGeminiKeyIndex = i;
+            
+            try {
+                const models = await this.listGeminiModels();
+                results.push({
+                    keyIndex: i,
+                    key: this.geminiKeys[i].substring(0, 20) + '...',
+                    status: '可用',
+                    modelsCount: models.length
+                });
+            } catch (error) {
+                results.push({
+                    keyIndex: i,
+                    key: this.geminiKeys[i].substring(0, 20) + '...',
+                    status: '錯誤: ' + error.message,
+                    modelsCount: 0
+                });
+            }
+            
+            this.currentGeminiKeyIndex = originalIndex;
+        }
+        
+        return results;
+    }
+
     // Gemini 翻譯方法
     async translateWithGemini(text, oralExplanation = '') {
         try {
@@ -672,48 +714,6 @@ async function listAvailableModels() {
     } catch (error) {
         alert(`列出模型時發生錯誤：${error.message}`);
         console.error('List models error:', error);
-    }
-
-    // 獲取當前使用的 Gemini API Key
-    getCurrentGeminiKey() {
-        return this.geminiKeys[this.currentGeminiKeyIndex];
-    }
-
-    // 切換到下一個 Gemini API Key
-    switchToNextGeminiKey() {
-        this.currentGeminiKeyIndex = (this.currentGeminiKeyIndex + 1) % this.geminiKeys.length;
-        console.log(`切換到 Key ${this.currentGeminiKeyIndex + 1}/${this.geminiKeys.length}`);
-    }
-
-    // 測試所有 Gemini API Keys 的可用性
-    async testAllGeminiKeys() {
-        const results = [];
-        
-        for (let i = 0; i < this.geminiKeys.length; i++) {
-            const originalIndex = this.currentGeminiKeyIndex;
-            this.currentGeminiKeyIndex = i;
-            
-            try {
-                const models = await this.listGeminiModels();
-                results.push({
-                    keyIndex: i,
-                    key: this.geminiKeys[i].substring(0, 20) + '...',
-                    status: '可用',
-                    modelsCount: models.length
-                });
-            } catch (error) {
-                results.push({
-                    keyIndex: i,
-                    key: this.geminiKeys[i].substring(0, 20) + '...',
-                    status: '錯誤: ' + error.message,
-                    modelsCount: 0
-                });
-            }
-            
-            this.currentGeminiKeyIndex = originalIndex;
-        }
-        
-        return results;
     }
 }
 
