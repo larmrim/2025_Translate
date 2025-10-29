@@ -69,6 +69,29 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
         }
     }
 
+    // 列出可用的 Gemini 模型
+    async listGeminiModels() {
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.geminiKey}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`List Models API 錯誤: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+            }
+
+            const data = await response.json();
+            return data.models || [];
+        } catch (error) {
+            console.error('List models error:', error);
+            throw error;
+        }
+    }
+
     // Gemini 翻譯方法
     async translateWithGemini(text, oralExplanation = '') {
         try {
@@ -471,6 +494,13 @@ document.addEventListener('DOMContentLoaded', function() {
     statusBtn.innerHTML = '<i class="fas fa-info-circle"></i> 查看設置';
     statusBtn.onclick = showCurrentSettings;
     controls.appendChild(statusBtn);
+    
+    // 列出可用模型按鈕
+    const listModelsBtn = document.createElement('button');
+    listModelsBtn.className = 'btn btn-secondary';
+    listModelsBtn.innerHTML = '<i class="fas fa-list"></i> 列出模型';
+    listModelsBtn.onclick = listAvailableModels;
+    controls.appendChild(listModelsBtn);
 });
 
 // 顯示當前設置
@@ -516,4 +546,63 @@ function showCurrentSettings() {
     status += '- Gemini > OpenAI > DeepSeek > Hugging Face > 規則翻譯';
     
     alert(status);
+}
+
+// 列出可用的 Gemini 模型
+async function listAvailableModels() {
+    if (!translator.geminiKey) {
+        alert('請先設置 Gemini API Key！');
+        return;
+    }
+
+    try {
+        const models = await translator.listGeminiModels();
+        
+        if (models.length === 0) {
+            alert('沒有找到可用的模型。');
+            return;
+        }
+
+        let modelList = '可用的 Gemini 模型：\n\n';
+        
+        models.forEach((model, index) => {
+            modelList += `${index + 1}. ${model.name}\n`;
+            if (model.supportedGenerationMethods) {
+                modelList += `   支援的方法：${model.supportedGenerationMethods.join(', ')}\n`;
+            }
+            if (model.description) {
+                modelList += `   描述：${model.description}\n`;
+            }
+            modelList += '\n';
+        });
+
+        // 找出支援 generateContent 的模型
+        const supportedModels = models.filter(model => 
+            model.supportedGenerationMethods && 
+            model.supportedGenerationMethods.includes('generateContent')
+        );
+
+        if (supportedModels.length > 0) {
+            modelList += '\n支援 generateContent 的模型：\n';
+            supportedModels.forEach((model, index) => {
+                modelList += `${index + 1}. ${model.name}\n`;
+            });
+        }
+
+        alert(modelList);
+        
+        // 如果有支援的模型，詢問是否要更新
+        if (supportedModels.length > 0) {
+            const updateModel = confirm('是否要使用第一個支援的模型？');
+            if (updateModel) {
+                const modelName = supportedModels[0].name;
+                translator.geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+                alert(`已更新為使用模型：${modelName}`);
+            }
+        }
+        
+    } catch (error) {
+        alert(`列出模型時發生錯誤：${error.message}`);
+        console.error('List models error:', error);
+    }
 }
