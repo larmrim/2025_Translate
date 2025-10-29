@@ -6,7 +6,7 @@ class AncientTextTranslator {
         this.huggingfaceToken = null; // Hugging Face Token
         this.deepseekKey = null; // DeepSeek API Key
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
-        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-03-25:generateContent';
         this.deepseekUrl = 'https://api.deepseek.com/v1/chat/completions';
         this.freeServices = {
             huggingface: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium'
@@ -596,8 +596,10 @@ async function listAvailableModels() {
             const updateModel = confirm('是否要使用第一個支援的模型？');
             if (updateModel) {
                 const modelName = supportedModels[0].name;
-                translator.geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
-                alert(`已更新為使用模型：${modelName}`);
+                // 移除可能存在的 models/ 前綴，避免重複
+                const cleanModelName = modelName.replace('models/', '');
+                translator.geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModelName}:generateContent`;
+                alert(`已更新為使用模型：${cleanModelName}`);
             }
         }
         
