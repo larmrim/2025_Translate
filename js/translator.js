@@ -6,7 +6,7 @@ class AncientTextTranslator {
         this.huggingfaceToken = null; // Hugging Face Token
         this.deepseekKey = null; // DeepSeek API Key
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
-        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
         this.deepseekUrl = 'https://api.deepseek.com/v1/chat/completions';
         this.freeServices = {
             huggingface: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium'
@@ -105,17 +105,37 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
                     }],
                     generationConfig: {
                         temperature: 0.2,
-                        maxOutputTokens: 600
-                    }
+                        maxOutputTokens: 1000,
+                        topP: 0.8,
+                        topK: 40
+                    },
+                    safetySettings: [
+                        {
+                            category: "HARM_CATEGORY_HARASSMENT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_HATE_SPEECH",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        }
+                    ]
                 })
             });
 
             if (!response.ok) {
-                throw new Error(`Gemini API 錯誤: ${response.status}`);
+                const errorData = await response.json();
+                console.error('Gemini API Error:', errorData);
+                throw new Error(`Gemini API 錯誤: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
             }
 
             const data = await response.json();
-            return data.candidates[0].content.parts[0].text.trim();
+            
+            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+                return data.candidates[0].content.parts[0].text.trim();
+            } else {
+                console.error('Unexpected Gemini response format:', data);
+                throw new Error('Gemini API 回應格式異常');
+            }
         } catch (error) {
             console.error('Gemini translation error:', error);
             throw error;
