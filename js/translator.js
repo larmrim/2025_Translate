@@ -6,7 +6,7 @@ class AncientTextTranslator {
         this.huggingfaceToken = null; // Hugging Face Token
         this.deepseekKey = null; // DeepSeek API Key
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
-        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-03-25:generateContent';
+        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
         this.deepseekUrl = 'https://api.deepseek.com/v1/chat/completions';
         this.freeServices = {
             huggingface: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium'
@@ -148,6 +148,12 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error('Gemini API Error:', errorData);
+                
+                // 處理配額錯誤
+                if (response.status === 429) {
+                    throw new Error(`配額已用完！\n\n免費配額限制：\n- 每日請求次數有限\n- 每分鐘請求次數有限\n- 每分鐘 token 數量有限\n\n建議：\n1. 等待明天重置配額\n2. 使用規則翻譯功能\n3. 考慮升級到付費方案`);
+                }
+                
                 throw new Error(`Gemini API 錯誤: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
             }
 
