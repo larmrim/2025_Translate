@@ -10,7 +10,7 @@ class AncientTextTranslator {
         this.huggingfaceToken = null; // Hugging Face Token
         this.deepseekKey = null; // DeepSeek API Key
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
-        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-03-25:generateContent';
+        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
         this.deepseekUrl = 'https://api.deepseek.com/v1/chat/completions';
         this.freeServices = {
             huggingface: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium'
