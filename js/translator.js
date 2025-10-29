@@ -6,7 +6,7 @@ class AncientTextTranslator {
         this.huggingfaceToken = null; // Hugging Face Token
         this.deepseekKey = null; // DeepSeek API Key
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
-        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-03-25:generateContent';
         this.deepseekUrl = 'https://api.deepseek.com/v1/chat/completions';
         this.freeServices = {
             huggingface: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium'
@@ -69,6 +69,51 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
         }
     }
 
+    // 自動選擇最適合的 Gemini 模型
+    async selectBestGeminiModel() {
+        try {
+            const models = await this.listGeminiModels();
+            
+            // 優先選擇配額較寬鬆的模型
+            const preferredModels = [
+                'gemini-1.5-flash',
+                'gemini-1.5-pro',
+                'gemini-2.5-flash',
+                'gemini-2.5-pro-preview-03-25',
+                'gemini-pro'
+            ];
+            
+            for (const preferredModel of preferredModels) {
+                const model = models.find(m => m.name.includes(preferredModel));
+                if (model && model.supportedGenerationMethods && model.supportedGenerationMethods.includes('generateContent')) {
+                    const cleanModelName = model.name.replace('models/', '');
+                    this.geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModelName}:generateContent`;
+                    console.log(`已選擇模型: ${cleanModelName}`);
+                    return cleanModelName;
+                }
+            }
+            
+            // 如果沒有找到偏好的模型，使用第一個支援的模型
+            const supportedModel = models.find(m => 
+                m.supportedGenerationMethods && 
+                m.supportedGenerationMethods.includes('generateContent')
+            );
+            
+            if (supportedModel) {
+                const cleanModelName = supportedModel.name.replace('models/', '');
+                this.geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModelName}:generateContent`;
+                console.log(`已選擇模型: ${cleanModelName}`);
+                return cleanModelName;
+            }
+            
+            throw new Error('沒有找到支援 generateContent 的模型');
+            
+        } catch (error) {
+            console.error('選擇模型時發生錯誤:', error);
+            throw error;
+        }
+    }
+
     // 列出可用的 Gemini 模型
     async listGeminiModels() {
         try {
@@ -95,6 +140,11 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
     // Gemini 翻譯方法
     async translateWithGemini(text, oralExplanation = '') {
         try {
+            // 如果還沒有選擇模型，自動選擇最佳模型
+            if (!this.geminiUrl || this.geminiUrl.includes('gemini-pro:generateContent')) {
+                await this.selectBestGeminiModel();
+            }
+            
             const response = await fetch(`${this.geminiUrl}?key=${this.geminiKey}`, {
                 method: 'POST',
                 headers: {
