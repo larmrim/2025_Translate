@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>古文翻譯 AI - 2025 Translate</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .translation-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .input-section, .output-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .input-section:hover, .output-section:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .examples {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .examples h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .example-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+        }
+
+        .example-item:hover {
+            background: #e3f2fd;
+            transform: translateX(5px);
+        }
+
+        .example-text {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .example-translation {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .translation-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-scroll"></i> 古文翻譯 AI</h1>
+            <p>運用人工智慧技術，讓古文翻譯變得簡單易懂</p>
+        </div>
+
+        <div class="main-content">
+            <div class="translation-section">
+                <div class="input-section">
+                    <div class="section-title">
+                        <i class="fas fa-edit"></i>
+                        輸入古文
+                    </div>
+                    <textarea id="inputText" class="textarea" placeholder="請在此輸入您想要翻譯的古文...&#10;&#10;例如：&#10;子曰：「學而時習之，不亦說乎？」"></textarea>
+                </div>
+
+                <div class="output-section">
+                    <div class="section-title">
+                        <i class="fas fa-language"></i>
+                        現代翻譯
+                    </div>
+                    <textarea id="outputText" class="textarea" placeholder="翻譯結果將顯示在這裡..." readonly></textarea>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="translateBtn" class="btn btn-primary">
+                    <i class="fas fa-magic"></i>
+                    開始翻譯
+                </button>
+                <button id="clearBtn" class="btn btn-secondary">
+                    <i class="fas fa-trash"></i>
+                    清除內容
+                </button>
+                <button id="copyBtn" class="btn btn-secondary">
+                    <i class="fas fa-copy"></i>
+                    複製結果
+                </button>
+            </div>
+
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>AI 正在翻譯中，請稍候...</p>
+            </div>
+
+            <div class="examples">
+                <h3><i class="fas fa-lightbulb"></i> 範例古文</h3>
+                <div class="example-item" onclick="loadExample(0)">
+                    <div class="example-text">子曰：「學而時習之，不亦說乎？」</div>
+                    <div class="example-translation">孔子說：「學習並且按時複習，不是很愉快嗎？」</div>
+                </div>
+                <div class="example-item" onclick="loadExample(1)">
+                    <div class="example-text">有朋自遠方來，不亦樂乎？</div>
+                    <div class="example-translation">有朋友從遠方來，不是很快樂嗎？</div>
+                </div>
+                <div class="example-item" onclick="loadExample(2)">
+                    <div class="example-text">人不知而不慍，不亦君子乎？</div>
+                    <div class="example-translation">別人不了解自己而不生氣，不也是君子嗎？</div>
+                </div>
+                <div class="example-item" onclick="loadExample(3)">
+                    <div class="example-text">己所不欲，勿施於人。</div>
+                    <div class="example-translation">自己不想要的，不要強加給別人。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 Translate - 讓古文學習更簡單</p>
+        </div>
+    </div>
+
+    <script src="js/translator.js"></script>
+    <script>
+        const examples = [
+            {
+                text: "子曰：「學而時習之，不亦說乎？」",
+                translation: "孔子說：「學習並且按時複習，不是很愉快嗎？」"
+            },
+            {
+                text: "有朋自遠方來，不亦樂乎？",
+                translation: "有朋友從遠方來，不是很快樂嗎？"
+            },
+            {
+                text: "人不知而不慍，不亦君子乎？",
+                translation: "別人不了解自己而不生氣，不也是君子嗎？"
+            },
+            {
+                text: "己所不欲，勿施於人。",
+                translation: "自己不想要的，不要強加給別人。"
+            }
+        ];
+
+        function loadExample(index) {
+            const example = examples[index];
+            document.getElementById('inputText').value = example.text;
+            document.getElementById('outputText').value = example.translation;
+        }
+
+        function clearContent() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('outputText').value = '';
+        }
+
+        function copyResult() {
+            const outputText = document.getElementById('outputText');
+            if (!outputText.value.trim()) {
+                alert('沒有翻譯結果可以複製！');
+                return;
+            }
+            
+            outputText.select();
+            document.execCommand('copy');
+            alert('翻譯結果已複製到剪貼簿！');
+        }
+
+        // 事件監聽器
+        document.getElementById('translateBtn').addEventListener('click', translateText);
+        document.getElementById('clearBtn').addEventListener('click', clearContent);
+        document.getElementById('copyBtn').addEventListener('click', copyResult);
+
+        // 快捷鍵支援
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                translateText();
+            }
+        });
+    </script>
+</body>
+</html>
