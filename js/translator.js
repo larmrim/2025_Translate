@@ -1,12 +1,13 @@
 // AI 翻譯 API 整合
 class AncientTextTranslator {
     constructor() {
-        this.apiKey = null; // 實際使用時需要設置 API Key
+        this.apiKey = null; // OpenAI API Key
+        this.huggingfaceToken = null; // Hugging Face Token
+        this.deepseekKey = null; // DeepSeek API Key
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
+        this.deepseekUrl = 'https://api.deepseek.com/v1/chat/completions';
         this.freeServices = {
-            huggingface: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium',
-            cohere: 'https://api.cohere.ai/v1/generate', // 需要免費 API Key
-            deepseek: 'https://api.deepseek.com/v1/chat/completions' // 需要免費 API Key
+            huggingface: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium'
         };
     }
 
@@ -62,6 +63,62 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
             return data.choices[0].message.content.trim();
         } catch (error) {
             console.error('Translation API error:', error);
+            throw error;
+        }
+    }
+
+    // DeepSeek 翻譯方法
+    async translateWithDeepSeek(text, oralExplanation = '') {
+        try {
+            const response = await fetch(this.deepseekUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.deepseekKey}`
+                },
+                body: JSON.stringify({
+                    model: 'deepseek-chat',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `你是一個專業的古文翻譯專家，專精於將古文翻譯成現代口語化的白話文。
+
+翻譯要求：
+1. **準確性**：忠實於原文意思，不添加或刪減內容
+2. **口語化**：使用現代人日常對話的語調和用詞
+3. **流暢性**：語句自然通順，符合現代中文表達習慣
+4. **易懂性**：避免過於文雅的詞彙，讓一般人都能理解
+
+翻譯風格：
+- 使用「你」、「我」、「我們」等現代人稱
+- 適當使用「啊」、「呢」、「吧」等語氣詞
+- 保持原文的語氣和情感色彩
+- 如果原文是疑問句，保持疑問語氣
+- 如果原文是感嘆句，保持感嘆語氣`
+                        },
+                        {
+                            role: 'user',
+                            content: `請翻譯以下古文：
+
+古文：${text}
+${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
+
+請提供口語化、準確、流暢、易懂的現代翻譯。`
+                        }
+                    ],
+                    max_tokens: 600,
+                    temperature: 0.2
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`DeepSeek API 錯誤: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0].message.content.trim();
+        } catch (error) {
+            console.error('DeepSeek translation error:', error);
             throw error;
         }
     }
@@ -179,14 +236,15 @@ async function translateText() {
         // 優先使用 OpenAI API
         if (translator.apiKey) {
             translation = await translator.translate(inputText, oralExplanation);
+        } else if (translator.deepseekKey) {
+            // 使用 DeepSeek API
+            translation = await translator.translateWithDeepSeek(inputText, oralExplanation);
+        } else if (translator.huggingfaceToken) {
+            // 使用 Hugging Face API
+            translation = await translator.translateWithFreeAI(inputText, oralExplanation);
         } else {
-            // 嘗試免費 AI 服務
-            try {
-                translation = await translator.translateWithFreeAI(inputText, oralExplanation);
-            } catch (freeError) {
-                // 如果免費 AI 失敗，使用規則翻譯
-                translation = await translator.translateWithRules(inputText, oralExplanation);
-            }
+            // 使用規則翻譯
+            translation = await translator.translateWithRules(inputText, oralExplanation);
         }
         
         outputText.value = translation;
@@ -210,34 +268,130 @@ function setupAPIKey() {
     const options = [
         '1. OpenAI API Key（推薦，有免費額度）',
         '2. Hugging Face Token（免費）',
-        '3. 使用規則翻譯（無需 API Key）'
+        '3. DeepSeek API Key（免費額度）',
+        '4. 使用規則翻譯（無需 API Key）'
     ].join('\n');
     
-    const choice = prompt(`請選擇翻譯服務：\n\n${options}\n\n輸入 1、2 或 3：`);
+    const choice = prompt(`請選擇翻譯服務：\n\n${options}\n\n輸入 1、2、3 或 4：`);
     
     if (choice === '1') {
+        setupOpenAIKey();
+    } else if (choice === '2') {
+        setupHuggingFaceToken();
+    } else if (choice === '3') {
+        setupDeepSeekKey();
+    } else if (choice === '4') {
+        alert('將使用規則翻譯，適合常見古文詞彙。');
+    }
+}
+
+// OpenAI API Key 設置
+function setupOpenAIKey() {
+    const hasAccount = confirm('您是否已經有 OpenAI 帳號？\n\n點擊「確定」：已有帳號，直接輸入 API Key\n點擊「取消」：沒有帳號，前往註冊');
+    
+    if (hasAccount) {
         const apiKey = prompt('請輸入您的 OpenAI API Key：');
-        if (apiKey) {
+        if (apiKey && apiKey.startsWith('sk-')) {
             translator.apiKey = apiKey;
             alert('OpenAI API Key 設置成功！現在可以使用高品質 AI 翻譯。');
+        } else {
+            alert('API Key 格式不正確，請確認是否以 "sk-" 開頭。');
         }
-    } else if (choice === '2') {
+    } else {
+        // 開啟註冊頁面
+        const registerWindow = window.open('https://platform.openai.com/signup', '_blank');
+        alert('已開啟 OpenAI 註冊頁面。\n\n註冊完成後，請：\n1. 前往 https://platform.openai.com/api-keys\n2. 點擊 "Create new secret key"\n3. 複製 API Key\n4. 重新點擊「設置 API Key」按鈕');
+    }
+}
+
+// Hugging Face Token 設置
+function setupHuggingFaceToken() {
+    const hasAccount = confirm('您是否已經有 Hugging Face 帳號？\n\n點擊「確定」：已有帳號，直接輸入 Token\n點擊「取消」：沒有帳號，前往註冊');
+    
+    if (hasAccount) {
         const token = prompt('請輸入您的 Hugging Face Token：');
-        if (token) {
+        if (token && token.startsWith('hf_')) {
             translator.huggingfaceToken = token;
             alert('Hugging Face Token 設置成功！現在可以使用免費 AI 翻譯。');
+        } else {
+            alert('Token 格式不正確，請確認是否以 "hf_" 開頭。');
         }
-    } else if (choice === '3') {
-        alert('將使用規則翻譯，適合常見古文詞彙。');
+    } else {
+        // 開啟註冊頁面
+        const registerWindow = window.open('https://huggingface.co/join', '_blank');
+        alert('已開啟 Hugging Face 註冊頁面。\n\n註冊完成後，請：\n1. 前往 https://huggingface.co/settings/tokens\n2. 點擊 "New token"\n3. 複製 Token\n4. 重新點擊「設置 API Key」按鈕');
+    }
+}
+
+// DeepSeek API Key 設置
+function setupDeepSeekKey() {
+    const hasAccount = confirm('您是否已經有 DeepSeek 帳號？\n\n點擊「確定」：已有帳號，直接輸入 API Key\n點擊「取消」：沒有帳號，前往註冊');
+    
+    if (hasAccount) {
+        const apiKey = prompt('請輸入您的 DeepSeek API Key：');
+        if (apiKey) {
+            translator.deepseekKey = apiKey;
+            alert('DeepSeek API Key 設置成功！現在可以使用免費 AI 翻譯。');
+        }
+    } else {
+        // 開啟註冊頁面
+        const registerWindow = window.open('https://platform.deepseek.com/signup', '_blank');
+        alert('已開啟 DeepSeek 註冊頁面。\n\n註冊完成後，請：\n1. 前往 https://platform.deepseek.com/api_keys\n2. 創建新的 API Key\n3. 複製 API Key\n4. 重新點擊「設置 API Key」按鈕');
     }
 }
 
 // 添加 API Key 設置按鈕
 document.addEventListener('DOMContentLoaded', function() {
     const controls = document.querySelector('.controls');
+    
+    // 設置 API Key 按鈕
     const apiKeyBtn = document.createElement('button');
     apiKeyBtn.className = 'btn btn-secondary';
     apiKeyBtn.innerHTML = '<i class="fas fa-key"></i> 設置 API Key';
     apiKeyBtn.onclick = setupAPIKey;
     controls.appendChild(apiKeyBtn);
+    
+    // 查看當前設置按鈕
+    const statusBtn = document.createElement('button');
+    statusBtn.className = 'btn btn-secondary';
+    statusBtn.innerHTML = '<i class="fas fa-info-circle"></i> 查看設置';
+    statusBtn.onclick = showCurrentSettings;
+    controls.appendChild(statusBtn);
 });
+
+// 顯示當前設置
+function showCurrentSettings() {
+    let status = '當前翻譯服務設置：\n\n';
+    
+    if (translator.apiKey) {
+        status += '✅ OpenAI API Key：已設置\n';
+        status += '   - 翻譯品質：最高\n';
+        status += '   - 費用：有免費額度\n\n';
+    }
+    
+    if (translator.deepseekKey) {
+        status += '✅ DeepSeek API Key：已設置\n';
+        status += '   - 翻譯品質：高\n';
+        status += '   - 費用：有免費額度\n\n';
+    }
+    
+    if (translator.huggingfaceToken) {
+        status += '✅ Hugging Face Token：已設置\n';
+        status += '   - 翻譯品質：中等\n';
+        status += '   - 費用：免費\n\n';
+    }
+    
+    if (!translator.apiKey && !translator.deepseekKey && !translator.huggingfaceToken) {
+        status += '❌ 未設置任何 AI 服務\n';
+        status += '   - 當前使用：規則翻譯\n';
+        status += '   - 翻譯品質：基礎\n';
+        status += '   - 費用：免費\n\n';
+    }
+    
+    status += '💡 提示：\n';
+    status += '- 點擊「設置 API Key」可添加新的翻譯服務\n';
+    status += '- 多個服務會按優先級自動選擇\n';
+    status += '- OpenAI > DeepSeek > Hugging Face > 規則翻譯';
+    
+    alert(status);
+}
