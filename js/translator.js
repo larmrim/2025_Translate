@@ -2,7 +2,11 @@
 class AncientTextTranslator {
     constructor() {
         this.apiKey = null; // OpenAI API Key
-        this.geminiKey = "AIzaSyAoBrMaD-ZXSGV3Cc0WLu5mBj2Hrs7qiL0"; // Google Gemini API Key
+        this.geminiKeys = [
+            "AIzaSyAoBrMaD-ZXSGV3Cc0WLu5mBj2Hrs7qiL0", // 原始 Key
+            "AIzaSyBWDcpo8Mv86AI_xIR7_m4x3tRwK_BRdjQ"  // 新的 Key
+        ]; // Google Gemini API Keys 列表
+        this.currentGeminiKeyIndex = 0; // 當前使用的 Key 索引
         this.huggingfaceToken = null; // Hugging Face Token
         this.deepseekKey = null; // DeepSeek API Key
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
@@ -117,7 +121,7 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
     // 列出可用的 Gemini 模型
     async listGeminiModels() {
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.geminiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.getCurrentGeminiKey()}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -145,7 +149,7 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
                 await this.selectBestGeminiModel();
             }
             
-            const response = await fetch(`${this.geminiUrl}?key=${this.geminiKey}`, {
+            const response = await fetch(`${this.geminiUrl}?key=${this.getCurrentGeminiKey()}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -201,7 +205,13 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
                 
                 // 處理配額錯誤
                 if (response.status === 429) {
-                    throw new Error(`配額已用完！\n\n免費配額限制：\n- 每日請求次數有限\n- 每分鐘請求次數有限\n- 每分鐘 token 數量有限\n\n建議：\n1. 等待明天重置配額\n2. 使用規則翻譯功能\n3. 考慮升級到付費方案`);
+                    // 嘗試切換到下一個 Key
+                    if (this.geminiKeys.length > 1) {
+                        this.switchToNextGeminiKey();
+                        throw new Error(`當前 Key 配額已用完，已自動切換到下一個 Key。請重試。`);
+                    } else {
+                        throw new Error(`配額已用完！\n\n免費配額限制：\n- 每日請求次數有限\n- 每分鐘請求次數有限\n- 每分鐘 token 數量有限\n\n建議：\n1. 等待明天重置配額\n2. 使用規則翻譯功能\n3. 考慮升級到付費方案`);
+                    }
                 }
                 
                 throw new Error(`Gemini API 錯誤: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
@@ -388,7 +398,7 @@ async function translateText() {
         let translation;
         
         // 優先使用 Gemini API（免費且對中文支援好）
-        if (translator.geminiKey) {
+        if (translator.geminiKeys && translator.geminiKeys.length > 0) {
             translation = await translator.translateWithGemini(inputText, oralExplanation);
         } else if (translator.apiKey) {
             // 使用 OpenAI API
@@ -662,5 +672,85 @@ async function listAvailableModels() {
     } catch (error) {
         alert(`列出模型時發生錯誤：${error.message}`);
         console.error('List models error:', error);
+    }
+
+    // 獲取當前使用的 Gemini API Key
+    getCurrentGeminiKey() {
+        return this.geminiKeys[this.currentGeminiKeyIndex];
+    }
+
+    // 切換到下一個 Gemini API Key
+    switchToNextGeminiKey() {
+        this.currentGeminiKeyIndex = (this.currentGeminiKeyIndex + 1) % this.geminiKeys.length;
+        console.log(`切換到 Key ${this.currentGeminiKeyIndex + 1}/${this.geminiKeys.length}`);
+    }
+
+    // 測試所有 Gemini API Keys 的可用性
+    async testAllGeminiKeys() {
+        const results = [];
+        
+        for (let i = 0; i < this.geminiKeys.length; i++) {
+            const originalIndex = this.currentGeminiKeyIndex;
+            this.currentGeminiKeyIndex = i;
+            
+            try {
+                const models = await this.listGeminiModels();
+                results.push({
+                    keyIndex: i,
+                    key: this.geminiKeys[i].substring(0, 20) + '...',
+                    status: '可用',
+                    modelsCount: models.length
+                });
+            } catch (error) {
+                results.push({
+                    keyIndex: i,
+                    key: this.geminiKeys[i].substring(0, 20) + '...',
+                    status: '錯誤: ' + error.message,
+                    modelsCount: 0
+                });
+            }
+            
+            this.currentGeminiKeyIndex = originalIndex;
+        }
+        
+        return results;
+    }
+}
+
+// 測試所有 Gemini API Keys
+async function testAllKeys() {
+    if (!translator.geminiKeys || translator.geminiKeys.length === 0) {
+        alert('沒有設置任何 Gemini API Key！');
+        return;
+    }
+
+    try {
+        const results = await translator.testAllGeminiKeys();
+        
+        let resultText = 'Gemini API Keys 測試結果：\n\n';
+        
+        results.forEach((result, index) => {
+            resultText += `Key ${index + 1}: ${result.key}\n`;
+            resultText += `狀態: ${result.status}\n`;
+            if (result.modelsCount > 0) {
+                resultText += `可用模型數量: ${result.modelsCount}\n`;
+            }
+            resultText += '\n';
+        });
+
+        // 找出可用的 Keys
+        const availableKeys = results.filter(r => r.status === '可用');
+        if (availableKeys.length > 0) {
+            resultText += `✅ 可用 Keys: ${availableKeys.length}/${results.length}\n`;
+            resultText += `當前使用: Key ${translator.currentGeminiKeyIndex + 1}`;
+        } else {
+            resultText += '❌ 沒有可用的 Keys';
+        }
+
+        alert(resultText);
+        
+    } catch (error) {
+        alert(`測試 Keys 時發生錯誤：${error.message}`);
+        console.error('Test keys error:', error);
     }
 }
