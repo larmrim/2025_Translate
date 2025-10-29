@@ -3,7 +3,11 @@ class AncientTextTranslator {
     constructor() {
         this.apiKey = null; // 實際使用時需要設置 API Key
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
-        this.freeApiUrl = 'https://api.huggingface.co/models/microsoft/DialoGPT-medium'; // 免費替代方案
+        this.freeServices = {
+            huggingface: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium',
+            cohere: 'https://api.cohere.ai/v1/generate', // 需要免費 API Key
+            deepseek: 'https://api.deepseek.com/v1/chat/completions' // 需要免費 API Key
+        };
     }
 
     async translate(text, oralExplanation = '') {
@@ -58,6 +62,38 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
             return data.choices[0].message.content.trim();
         } catch (error) {
             console.error('Translation API error:', error);
+            throw error;
+        }
+    }
+
+    // 免費 AI 翻譯方法
+    async translateWithFreeAI(text, oralExplanation = '') {
+        try {
+            // 使用 Hugging Face 的免費 API
+            const token = this.huggingfaceToken || 'hf_your_token_here';
+            const response = await fetch(this.freeServices.huggingface, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    inputs: `請將以下古文翻譯成現代白話文：${text}${oralExplanation ? `\n用戶理解：${oralExplanation}` : ''}`,
+                    parameters: {
+                        max_length: 200,
+                        temperature: 0.3
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`免費 API 錯誤: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data[0]?.generated_text || '免費 AI 翻譯暫時不可用';
+        } catch (error) {
+            console.error('Free AI translation error:', error);
             throw error;
         }
     }
@@ -140,17 +176,22 @@ async function translateText() {
     try {
         let translation;
         
-        // 嘗試使用 AI API
+        // 優先使用 OpenAI API
         if (translator.apiKey) {
             translation = await translator.translate(inputText, oralExplanation);
         } else {
-            // 使用規則翻譯作為備用
-            translation = await translator.translateWithRules(inputText, oralExplanation);
+            // 嘗試免費 AI 服務
+            try {
+                translation = await translator.translateWithFreeAI(inputText, oralExplanation);
+            } catch (freeError) {
+                // 如果免費 AI 失敗，使用規則翻譯
+                translation = await translator.translateWithRules(inputText, oralExplanation);
+            }
         }
         
         outputText.value = translation;
     } catch (error) {
-        // 如果 AI API 失敗，使用規則翻譯
+        // 如果所有方法都失敗，使用規則翻譯
         try {
             const fallbackTranslation = await translator.translateWithRules(inputText, oralExplanation);
             outputText.value = fallbackTranslation;
@@ -166,10 +207,28 @@ async function translateText() {
 
 // API Key 設置功能
 function setupAPIKey() {
-    const apiKey = prompt('請輸入您的 OpenAI API Key（留空則使用規則翻譯）：');
-    if (apiKey) {
-        translator.apiKey = apiKey;
-        alert('API Key 設置成功！現在可以使用 AI 翻譯功能。');
+    const options = [
+        '1. OpenAI API Key（推薦，有免費額度）',
+        '2. Hugging Face Token（免費）',
+        '3. 使用規則翻譯（無需 API Key）'
+    ].join('\n');
+    
+    const choice = prompt(`請選擇翻譯服務：\n\n${options}\n\n輸入 1、2 或 3：`);
+    
+    if (choice === '1') {
+        const apiKey = prompt('請輸入您的 OpenAI API Key：');
+        if (apiKey) {
+            translator.apiKey = apiKey;
+            alert('OpenAI API Key 設置成功！現在可以使用高品質 AI 翻譯。');
+        }
+    } else if (choice === '2') {
+        const token = prompt('請輸入您的 Hugging Face Token：');
+        if (token) {
+            translator.huggingfaceToken = token;
+            alert('Hugging Face Token 設置成功！現在可以使用免費 AI 翻譯。');
+        }
+    } else if (choice === '3') {
+        alert('將使用規則翻譯，適合常見古文詞彙。');
     }
 }
 
