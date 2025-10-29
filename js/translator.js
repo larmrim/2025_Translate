@@ -3,6 +3,7 @@ class AncientTextTranslator {
     constructor() {
         this.apiKey = null; // 實際使用時需要設置 API Key
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
+        this.freeApiUrl = 'https://api.huggingface.co/models/microsoft/DialoGPT-medium'; // 免費替代方案
     }
 
     async translate(text, oralExplanation = '') {
@@ -80,20 +81,39 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
             '有朋': '有朋友',
             '自遠方來': '從遠方來',
             '人不知': '別人不了解',
-            '學而': '學習並且'
+            '學而': '學習並且',
+            '人': '別人',
+            '知': '了解',
+            '不': '不',
+            '慍': '生氣',
+            '亦': '也',
+            '君子': '君子',
+            '乎': '嗎',
+            '己': '自己',
+            '所': '所',
+            '欲': '想要',
+            '勿': '不要',
+            '施': '強加',
+            '於': '給',
+            '人': '別人'
         };
 
         let result = text;
+        
+        // 應用規則替換
         for (const [ancient, modern] of Object.entries(rules)) {
             result = result.replace(new RegExp(ancient, 'g'), modern);
         }
 
         // 如果有口語解釋，嘗試結合
         if (oralExplanation) {
-            result = `${result}\n\n（結合您的理解：${oralExplanation}）`;
+            result = `${result}\n\n💡 結合您的理解：${oralExplanation}`;
         }
 
-        return result + '（規則翻譯結果）';
+        // 添加說明
+        result += '\n\n📝 這是規則翻譯結果。如需更準確的 AI 翻譯，請設置 OpenAI API Key。';
+
+        return result;
     }
 }
 
