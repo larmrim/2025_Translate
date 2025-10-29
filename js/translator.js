@@ -2,7 +2,7 @@
 class AncientTextTranslator {
     constructor() {
         this.apiKey = null; // OpenAI API Key
-        this.geminiKey = null; // Google Gemini API Key
+        this.geminiKey = "AIzaSyAoBrMaD-ZXSGV3Cc0WLu5mBj2Hrs7qiL0"; // Google Gemini API Key (預設)
         this.huggingfaceToken = null; // Hugging Face Token
         this.deepseekKey = null; // DeepSeek API Key
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
@@ -458,10 +458,11 @@ function showCurrentSettings() {
     let status = '當前翻譯服務設置：\n\n';
     
     if (translator.geminiKey) {
-        status += '✅ Google Gemini API Key：已設置\n';
+        status += '✅ Google Gemini API Key：已預設設置\n';
         status += '   - 翻譯品質：最高\n';
         status += '   - 費用：免費額度大\n';
-        status += '   - 中文支援：優秀\n\n';
+        status += '   - 中文支援：優秀\n';
+        status += '   - 狀態：已啟用，無需額外設置\n\n';
     }
     
     if (translator.apiKey) {
