@@ -2,11 +2,11 @@
 class AncientTextTranslator {
     constructor() {
         this.apiKey = null; // OpenAI API Key
-        this.geminiKey = "AIzaSyAoBrMaD-ZXSGV3Cc0WLu5mBj2Hrs7qiL0"; // Google Gemini API Key (預設)
+        this.geminiKey = null; // Google Gemini API Key (需要從 Google AI Studio 獲取)
         this.huggingfaceToken = null; // Hugging Face Token
         this.deepseekKey = null; // DeepSeek API Key
         this.baseUrl = 'https://api.openai.com/v1/chat/completions';
-        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
         this.deepseekUrl = 'https://api.deepseek.com/v1/chat/completions';
         this.freeServices = {
             huggingface: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium'
