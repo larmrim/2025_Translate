@@ -313,7 +313,7 @@
                 <div class="input-section">
                     <div class="section-title">
                         <i class="fas fa-list-ul"></i>
-                        大綱與重點
+                        師父開示大綱與重點
                         <button id="regenerateOutlineBtn" class="btn-regenerate" style="margin-left: auto; display: none;">
                             <i class="fas fa-redo"></i>
                             重新生成
@@ -343,10 +343,6 @@
                 <button id="clearBtn" class="btn btn-secondary">
                     <i class="fas fa-trash"></i>
                     清除內容
-                </button>
-                <button id="copyBtn" class="btn btn-secondary">
-                    <i class="fas fa-copy"></i>
-                    複製結果
                 </button>
             </div>
 
@@ -480,7 +476,6 @@
             translateText();
         });
         document.getElementById('clearBtn').addEventListener('click', clearContent);
-        document.getElementById('copyBtn').addEventListener('click', copyResult);
         
         // 重新生成按鈕事件監聽器
         document.getElementById('regenerateOutlineBtn').addEventListener('click', function() {
