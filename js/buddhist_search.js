@@ -225,19 +225,32 @@ class BuddhistTextSearcher {
                 continue;
             }
             
+            // 統一引號以便比對（處理『』和「」的差異）
+            const itemOriginalNormalized = item.original.replace(/[''""「」『』《》]/g, '「').replace(/[''""『』《》]/g, '」');
+            const queryTextNormalized = queryText.replace(/[''""「」『』《》]/g, '「').replace(/[''""『』《》]/g, '」');
+            
             // 清理原文用於比對（去除標點和空白）
-            const itemOriginalClean = item.original.replace(/[，。！？；：、\s《》「」『』【】〔〕〈〉()（）]/g, '');
+            const itemOriginalClean = itemOriginalNormalized.replace(/[，。！？；：、\s【】〔〕〈〉()（）]/g, '');
             
             // 判斷是否應該包含：
-            // 1. 用戶輸入中包含完整的段落原文（含標點）
+            // 1. 用戶輸入中包含完整的段落原文（含標點，考慮引號差異）
             // 2. 用戶輸入中包含段落原文（不含標點）
-            // 3. 段落很短（<=20字）且用戶輸入中包含部分關鍵字（允許連續短句）
-            const isDirectlyIncluded = queryText.includes(item.original);
+            // 3. 段落很短（<=20字）且用戶輸入中包含足夠的共同字符（>=60%）
+            const isDirectlyIncluded = queryText.includes(item.original) || queryTextNormalized.includes(itemOriginalNormalized);
             const isCleanIncluded = itemOriginalClean.length > 0 && queryTextClean.includes(itemOriginalClean);
-            const isShortAndRelated = item.original.length <= 20 && 
-                                     itemOriginalClean.split('').some(char => queryTextClean.includes(char));
+            
+            // 對於短段落，檢查共同字符比例
+            const commonChars = itemOriginalClean.split('').filter(char => queryTextClean.includes(char));
+            const charMatchRatio = itemOriginalClean.length > 0 ? commonChars.length / itemOriginalClean.length : 0;
+            const isShortAndRelated = item.original.length <= 20 && charMatchRatio > 0.6;
             
             const isIncluded = isDirectlyIncluded || isCleanIncluded || isShortAndRelated;
+            
+            // 調試日誌：顯示比對詳情（僅前5段）
+            if (!isIncluded && i < startIndex + 5) {
+                console.log(`  未匹配段落 ${i - startIndex + 1}：${item.original.substring(0, 40)}...`);
+                console.log(`    直接包含：${isDirectlyIncluded}, 清理後包含：${isCleanIncluded}, 短句相關：${isShortAndRelated} (字符匹配率: ${charMatchRatio.toFixed(2)})`);
+            }
             
             if (isIncluded) {
                 mergedText += '\n\n' + item.explanation;
@@ -269,11 +282,17 @@ class BuddhistTextSearcher {
                     continue;
                 }
                 
-                const itemOriginalClean = item.original.replace(/[，。！？；：、\s《》「」『』【】〔〕〈〉()（）]/g, '');
-                const isDirectlyIncluded = queryText.includes(item.original);
+                // 統一引號以便比對
+                const itemOriginalNormalized = item.original.replace(/[''""「」『』《》]/g, '「').replace(/[''""『』《》]/g, '」');
+                const queryTextNormalized = queryText.replace(/[''""「」『』《》]/g, '「').replace(/[''""『』《》]/g, '」');
+                
+                const itemOriginalClean = itemOriginalNormalized.replace(/[，。！？；：、\s【】〔〕〈〉()（）]/g, '');
+                const isDirectlyIncluded = queryText.includes(item.original) || queryTextNormalized.includes(itemOriginalNormalized);
                 const isCleanIncluded = itemOriginalClean.length > 0 && queryTextClean.includes(itemOriginalClean);
-                const isShortAndRelated = item.original.length <= 20 && 
-                                         itemOriginalClean.split('').some(char => queryTextClean.includes(char));
+                
+                const commonChars = itemOriginalClean.split('').filter(char => queryTextClean.includes(char));
+                const charMatchRatio = itemOriginalClean.length > 0 ? commonChars.length / itemOriginalClean.length : 0;
+                const isShortAndRelated = item.original.length <= 20 && charMatchRatio > 0.6;
                 
                 const isIncluded = isDirectlyIncluded || isCleanIncluded || isShortAndRelated;
                 
