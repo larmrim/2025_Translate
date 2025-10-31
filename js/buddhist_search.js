@@ -162,8 +162,8 @@ class BuddhistTextSearcher {
     getExplanation(originalText) {
         console.log('搜尋解釋，查詢文字長度：', originalText.length);
         
-        // 如果輸入很長，先用前100字進行初始搜尋以提高效率
-        const searchText = originalText.length > 100 ? originalText.substring(0, 100) : originalText;
+        // 如果輸入很長，先用前50字進行初始搜尋以提高效率
+        const searchText = originalText.length > 50 ? originalText.substring(0, 50) : originalText;
         const result = this.search(searchText, 1);
         
         if (!result) {
