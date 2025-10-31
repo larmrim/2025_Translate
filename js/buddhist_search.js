@@ -187,25 +187,39 @@ class BuddhistTextSearcher {
     
     // 查找並合併後續段落
     findAndMergeSubsequentParagraphs(queryText, firstMatch) {
+        console.log('\n=== 開始合併後續段落 ===');
+        console.log(`查詢文字長度：${queryText.length}`);
+        console.log(`匹配段落頁面：${firstMatch.page}`);
+        console.log(`匹配段落原文：${firstMatch.original.substring(0, 60)}...`);
+        
         let mergedText = firstMatch.explanation;
         let splitCount = 1;
         
         // 找到第一個匹配所在的頁面
+        console.log(`\n🔍 尋找頁面 ${firstMatch.page}...`);
         const pageIndex = this.data.findIndex(page => page.page === firstMatch.page);
         if (pageIndex === -1) {
+            console.log(`❌ 找不到頁面 ${firstMatch.page}`);
             return { text: mergedText, splitCount: 1 };
         }
         
+        console.log(`✅ 找到頁面，索引：${pageIndex}`);
         const page = this.data[pageIndex];
         const items = page.items || [];
+        console.log(`📄 頁面包含 ${items.length} 個段落項目`);
         
         // 找到第一個匹配在 items 中的位置
         // 使用寬鬆的匹配，因為 original 可能有前綴或格式差異
+        console.log(`\n🔍 定位匹配段落在項目中的位置...`);
         let startIndex = -1;
         for (let i = 0; i < items.length; i++) {
+            if (i < 3) {
+                console.log(`  檢查項目 ${i}：${items[i].original ? items[i].original.substring(0, 40) : '無'}...`);
+            }
             // 精確匹配
             if (items[i].original === firstMatch.original && items[i].explanation === firstMatch.explanation) {
                 startIndex = i;
+                console.log(`  ✅ 精確匹配找到位置：${i}`);
                 break;
             }
             // 如果精確匹配失敗，嘗試寬鬆匹配（去除前綴、標點後比對）
@@ -230,11 +244,14 @@ class BuddhistTextSearcher {
         }
         
         console.log(`  ✅ 找到起始段落位置：${startIndex}，頁面共有 ${items.length} 個段落`);
+        console.log(`\n📋 開始檢查後續 ${Math.min(items.length - startIndex - 1, 20)} 個段落...`);
         
         // 檢查後續項目是否應該包含
         // 策略：檢查用戶輸入中是否包含後續段落的原文
         // 由於資料是連續的，只要用戶輸入包含該段落，就應該包含
         const queryTextClean = queryText.replace(/[，。！？；：、\s《》「」『』【】〔〕〈〉()（）]/g, '');
+        console.log(`  查詢文字（清理後）前100字符：${queryTextClean.substring(0, 100)}...`);
+        
         let consecutiveMissed = 0; // 連續未匹配的段落數
         const maxConsecutiveMissed = 2; // 允許最多連續2段未匹配
         
@@ -279,21 +296,20 @@ class BuddhistTextSearcher {
             
             const isIncluded = isDirectlyIncluded || isCleanIncluded || isShortAndRelated || hasKeyPhrase;
             
-            // 調試日誌：顯示比對詳情（檢查前10段）
-            if (i < startIndex + 10) {
-                if (isIncluded) {
-                    console.log(`  ✓ 匹配段落 ${i - startIndex + 1}：${item.original.substring(0, 40)}...`);
-                } else {
-                    console.log(`  ✗ 未匹配段落 ${i - startIndex + 1}：${item.original.substring(0, 40)}...`);
-                    console.log(`    直接包含：${isDirectlyIncluded}, 清理後包含：${isCleanIncluded}, 短句相關：${isShortAndRelated}, 關鍵詞組：${hasKeyPhrase} (字符匹配率: ${charMatchRatio.toFixed(2)})`);
-                }
-            }
+            // 詳細調試日誌
+            console.log(`\n  [段落 ${i - startIndex + 1}] ${item.original.substring(0, 50)}...`);
+            console.log(`    清理後原文：${itemOriginalClean.substring(0, 30)}...`);
+            console.log(`    直接包含：${isDirectlyIncluded}`);
+            console.log(`    清理後包含：${isCleanIncluded} (檢查: ${itemOriginalClean.substring(0, 20)} 是否在查詢中)`);
+            console.log(`    短句相關：${isShortAndRelated} (長度: ${item.original.length}, 匹配率: ${charMatchRatio.toFixed(2)})`);
+            console.log(`    關鍵詞組：${hasKeyPhrase}`);
+            console.log(`    → 最終決定：${isIncluded ? '✅ 包含' : '❌ 跳過'}`);
             
             if (isIncluded) {
                 mergedText += '\n\n' + item.explanation;
                 splitCount++;
                 consecutiveMissed = 0; // 重置連續未匹配計數
-                console.log(`  合併段落 ${splitCount}：${item.original.substring(0, 40)}...`);
+                console.log(`    ✅ 已合併段落 ${splitCount}，長度：${item.explanation.length}`);
             } else {
                 consecutiveMissed++;
                 // 如果連續多段未匹配，停止查找
@@ -346,6 +362,11 @@ class BuddhistTextSearcher {
                 }
             }
         }
+        
+        console.log(`\n=== 合併完成 ===`);
+        console.log(`總共合併了 ${splitCount} 段解釋`);
+        console.log(`合併後總長度：${mergedText.length} 字符`);
+        console.log(`========================\n`);
         
         return { text: mergedText, splitCount };
     }
