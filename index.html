@@ -151,6 +151,38 @@
             transform: none !important;
         }
 
+        .btn-regenerate {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-regenerate:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        .btn-regenerate:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .loading {
             display: none;
             text-align: center;
@@ -277,6 +309,34 @@
                 <textarea id="outputText" class="textarea" style="height: 500px;" placeholder="翻譯結果將顯示在這裡..." readonly></textarea>
             </div>
 
+            <div class="translation-section">
+                <div class="output-section-full">
+                    <div class="section-title">
+                        <i class="fas fa-list-ul"></i>
+                        大綱與重點
+                        <button id="regenerateOutlineBtn" class="btn-regenerate" style="margin-left: auto; display: none;">
+                            <i class="fas fa-redo"></i>
+                            重新生成
+                        </button>
+                    </div>
+                    <textarea id="outlineText" class="textarea" style="height: 300px;" placeholder="大綱與重點將顯示在這裡..." readonly></textarea>
+                </div>
+            </div>
+
+            <div class="translation-section">
+                <div class="output-section-full">
+                    <div class="section-title">
+                        <i class="fas fa-question-circle"></i>
+                        學習題綱
+                        <button id="regenerateQuestionsBtn" class="btn-regenerate" style="margin-left: auto; display: none;">
+                            <i class="fas fa-redo"></i>
+                            重新生成
+                        </button>
+                    </div>
+                    <textarea id="questionsText" class="textarea" style="height: 300px;" placeholder="學習題綱將顯示在這裡..." readonly></textarea>
+                </div>
+            </div>
+
             <div class="controls">
                 <button id="translateBtn" class="btn btn-primary">
                     <i class="fas fa-magic"></i>
@@ -312,8 +372,13 @@
             document.getElementById('oralExplanation').value = '';
             document.getElementById('inputText').value = '';
             document.getElementById('outputText').value = '';
+            document.getElementById('outlineText').value = '';
+            document.getElementById('questionsText').value = '';
             // 清除來源資訊顯示
             document.getElementById('sourceInfo').style.display = 'none';
+            // 隱藏重新生成按鈕
+            document.getElementById('regenerateOutlineBtn').style.display = 'none';
+            document.getElementById('regenerateQuestionsBtn').style.display = 'none';
         }
 
         function copyResult() {
@@ -387,7 +452,7 @@
                 position: fixed;
                 top: 20px;
                 right: 20px;
-                background: ${type === 'success' ? '#4CAF50' : '#2196F3'};
+                background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
                 color: white;
                 padding: 15px 20px;
                 border-radius: 5px;
@@ -418,6 +483,19 @@
         });
         document.getElementById('clearBtn').addEventListener('click', clearContent);
         document.getElementById('copyBtn').addEventListener('click', copyResult);
+        
+        // 重新生成按鈕事件監聽器
+        document.getElementById('regenerateOutlineBtn').addEventListener('click', function() {
+            if (typeof regenerateOutline === 'function') {
+                regenerateOutline();
+            }
+        });
+        
+        document.getElementById('regenerateQuestionsBtn').addEventListener('click', function() {
+            if (typeof regenerateQuestions === 'function') {
+                regenerateQuestions();
+            }
+        });
         
         // 當輸入佛法經文時，自動嘗試填入解釋（延遲1秒避免頻繁觸發）
         let autoFillTimer = null;

@@ -434,6 +434,165 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
 
         return result;
     }
+
+    // 生成大綱與重點
+    async generateOutlineAndKeyPoints(text, oralExplanation = '') {
+        try {
+            // 如果還沒有選擇模型，自動選擇最佳模型
+            if (!this.geminiUrl || this.geminiUrl.includes('gemini-pro:generateContent')) {
+                await this.selectBestGeminiModel();
+            }
+            
+            const response = await fetch(`${this.geminiUrl}?key=${this.getCurrentGeminiKey()}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `你是佛法學習專家，請根據以下佛法經文和日常師父的解釋，整理出大綱與重點。
+
+要求：
+1. 提取核心概念和主要論點
+2. 整理成清晰的層次結構
+3. 標示重點內容
+4. 簡潔明瞭，便於學習
+
+輸出格式：
+- 使用層次化的條列式結構
+- 每個重點用簡短的句子說明
+- 不要使用 Markdown 格式符號（如 **、*、# 等）
+
+佛法經文：${text}
+${oralExplanation ? `日常師父的解釋：${oralExplanation}` : ''}
+
+請提供大綱與重點：`
+                        }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.4,
+                        maxOutputTokens: 2000,
+                        topP: 0.9,
+                        topK: 50
+                    },
+                    safetySettings: [
+                        {
+                            category: "HARM_CATEGORY_HARASSMENT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_HATE_SPEECH",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API 錯誤: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.candidates && data.candidates.length > 0) {
+                const candidate = data.candidates[0];
+                if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+                    return candidate.content.parts[0].text.trim();
+                } else if (candidate.text) {
+                    return candidate.text.trim();
+                }
+            }
+            
+            throw new Error('無法解析回應格式');
+        } catch (error) {
+            console.error('Generate outline error:', error);
+            throw error;
+        }
+    }
+
+    // 生成學習題綱
+    async generateStudyQuestions(text, oralExplanation = '') {
+        try {
+            // 計算題目數量（根據經文長度，最少3題，最多10題）
+            const textLength = text.length;
+            let questionCount = 3;
+            if (textLength > 200) questionCount = 5;
+            if (textLength > 500) questionCount = 7;
+            if (textLength > 1000) questionCount = 10;
+            
+            // 如果還沒有選擇模型，自動選擇最佳模型
+            if (!this.geminiUrl || this.geminiUrl.includes('gemini-pro:generateContent')) {
+                await this.selectBestGeminiModel();
+            }
+            
+            const response = await fetch(`${this.geminiUrl}?key=${this.getCurrentGeminiKey()}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `你是佛法學習專家，請根據以下佛法經文和日常師父的解釋，設計 ${questionCount} 道學習題綱。
+
+要求：
+1. 題目要能幫助理解經文的核心內容
+2. 包含理解性問題和思考性問題
+3. 題目要具體明確，易於回答
+4. 難度適中，適合學習者自我檢視
+
+輸出格式：
+- 每題編號清楚
+- 直接列出問題，不需要答案
+- 不要使用 Markdown 格式符號（如 **、*、# 等）
+
+佛法經文：${text}
+${oralExplanation ? `日常師父的解釋：${oralExplanation}` : ''}
+
+請提供 ${questionCount} 道學習題綱：`
+                        }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.5,
+                        maxOutputTokens: 2000,
+                        topP: 0.9,
+                        topK: 50
+                    },
+                    safetySettings: [
+                        {
+                            category: "HARM_CATEGORY_HARASSMENT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_HATE_SPEECH",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API 錯誤: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.candidates && data.candidates.length > 0) {
+                const candidate = data.candidates[0];
+                if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+                    return candidate.content.parts[0].text.trim();
+                } else if (candidate.text) {
+                    return candidate.text.trim();
+                }
+            }
+            
+            throw new Error('無法解析回應格式');
+        } catch (error) {
+            console.error('Generate questions error:', error);
+            throw error;
+        }
+    }
 }
 
 // 初始化翻譯器
@@ -477,6 +636,42 @@ async function translateText() {
         }
         
         outputText.value = translation;
+        
+        // 生成大綱與重點和學習題綱（使用 Gemini API 時才生成）
+        if (translator.geminiKeys && translator.geminiKeys.length > 0) {
+            try {
+                // 生成大綱與重點
+                if (loading.querySelector('p')) {
+                    loading.querySelector('p').textContent = 'AI 正在生成大綱與重點...';
+                }
+                const outline = await translator.generateOutlineAndKeyPoints(inputText, oralExplanation);
+                const outlineText = document.getElementById('outlineText');
+                if (outlineText) {
+                    outlineText.value = outline;
+                    const regenerateOutlineBtn = document.getElementById('regenerateOutlineBtn');
+                    if (regenerateOutlineBtn) {
+                        regenerateOutlineBtn.style.display = 'flex';
+                    }
+                }
+                
+                // 生成學習題綱
+                if (loading.querySelector('p')) {
+                    loading.querySelector('p').textContent = 'AI 正在生成學習題綱...';
+                }
+                const questions = await translator.generateStudyQuestions(inputText, oralExplanation);
+                const questionsText = document.getElementById('questionsText');
+                if (questionsText) {
+                    questionsText.value = questions;
+                    const regenerateQuestionsBtn = document.getElementById('regenerateQuestionsBtn');
+                    if (regenerateQuestionsBtn) {
+                        regenerateQuestionsBtn.style.display = 'flex';
+                    }
+                }
+            } catch (error) {
+                console.error('Generate additional content error:', error);
+                // 即使生成失敗也不影響翻譯結果
+            }
+        }
     } catch (error) {
         // 如果所有方法都失敗，使用規則翻譯
         try {
@@ -489,6 +684,73 @@ async function translateText() {
     } finally {
         translateBtn.disabled = false;
         loading.style.display = 'none';
+        if (loading.querySelector('p')) {
+            loading.querySelector('p').textContent = 'AI 正在翻譯中，請稍候...';
+        }
+    }
+}
+
+// 重新生成大綱與重點
+async function regenerateOutline() {
+    const inputText = document.getElementById('inputText').value.trim();
+    const oralExplanation = document.getElementById('oralExplanation').value.trim();
+    const outlineText = document.getElementById('outlineText');
+    const btn = document.getElementById('regenerateOutlineBtn');
+    
+    if (!inputText) {
+        alert('請先輸入佛法經文！');
+        return;
+    }
+    
+    btn.disabled = true;
+    outlineText.value = '正在重新生成...';
+    
+    try {
+        const outline = await translator.generateOutlineAndKeyPoints(inputText, oralExplanation);
+        outlineText.value = outline;
+        if (typeof showNotification === 'function') {
+            showNotification('✅ 大綱與重點已重新生成', 'success');
+        }
+    } catch (error) {
+        outlineText.value = '生成失敗，請稍後再試。';
+        if (typeof showNotification === 'function') {
+            showNotification('❌ 生成失敗：' + (error.message || '未知錯誤'), 'error');
+        }
+        console.error('Regenerate outline error:', error);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// 重新生成學習題綱
+async function regenerateQuestions() {
+    const inputText = document.getElementById('inputText').value.trim();
+    const oralExplanation = document.getElementById('oralExplanation').value.trim();
+    const questionsText = document.getElementById('questionsText');
+    const btn = document.getElementById('regenerateQuestionsBtn');
+    
+    if (!inputText) {
+        alert('請先輸入佛法經文！');
+        return;
+    }
+    
+    btn.disabled = true;
+    questionsText.value = '正在重新生成...';
+    
+    try {
+        const questions = await translator.generateStudyQuestions(inputText, oralExplanation);
+        questionsText.value = questions;
+        if (typeof showNotification === 'function') {
+            showNotification('✅ 學習題綱已重新生成', 'success');
+        }
+    } catch (error) {
+        questionsText.value = '生成失敗，請稍後再試。';
+        if (typeof showNotification === 'function') {
+            showNotification('❌ 生成失敗：' + (error.message || '未知錯誤'), 'error');
+        }
+        console.error('Regenerate questions error:', error);
+    } finally {
+        btn.disabled = false;
     }
 }
 
