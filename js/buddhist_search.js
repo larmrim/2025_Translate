@@ -160,8 +160,12 @@ class BuddhistTextSearcher {
 
     // 獲取解釋（主要介面，支援多段匹配）
     getExplanation(originalText) {
-        console.log('搜尋解釋，查詢文字：', originalText.substring(0, 50));
-        const result = this.search(originalText, 1);
+        console.log('搜尋解釋，查詢文字長度：', originalText.length);
+        
+        // 如果輸入很長，先用前100字進行初始搜尋以提高效率
+        const searchText = originalText.length > 100 ? originalText.substring(0, 100) : originalText;
+        const result = this.search(searchText, 1);
+        
         if (!result) {
             console.log('未找到匹配結果');
             return null;
@@ -170,7 +174,7 @@ class BuddhistTextSearcher {
         console.log('找到匹配結果，分數：', result.score);
         console.log('匹配到的原文：', result.original);
         
-        // 查找並合併後續相關段落
+        // 使用完整輸入文字來查找並合併後續相關段落
         const mergedExplanation = this.findAndMergeSubsequentParagraphs(originalText, result);
         
         if (mergedExplanation.splitCount > 1) {
@@ -209,21 +213,28 @@ class BuddhistTextSearcher {
         
         // 檢查後續項目是否應該包含
         // 策略：檢查用戶輸入中是否包含後續段落的原文
-        for (let i = startIndex + 1; i < items.length && splitCount < 10; i++) {
+        // 由於資料是連續的，只要用戶輸入包含該段落，就應該包含
+        const queryTextClean = queryText.replace(/[，。！？；：、\s《》「」『』【】〔〕〈〉()（）]/g, '');
+        let consecutiveMissed = 0; // 連續未匹配的段落數
+        const maxConsecutiveMissed = 2; // 允許最多連續2段未匹配
+        
+        for (let i = startIndex + 1; i < items.length && consecutiveMissed <= maxConsecutiveMissed; i++) {
             const item = items[i];
-            if (!item.original || !item.explanation) continue;
+            if (!item.original || !item.explanation) {
+                consecutiveMissed++;
+                continue;
+            }
             
             // 清理原文用於比對（去除標點和空白）
             const itemOriginalClean = item.original.replace(/[，。！？；：、\s《》「」『』【】〔〕〈〉()（）]/g, '');
-            const queryTextClean = queryText.replace(/[，。！？；：、\s《》「」『』【】〔〕〈〉()（）]/g, '');
             
             // 判斷是否應該包含：
             // 1. 用戶輸入中包含完整的段落原文（含標點）
             // 2. 用戶輸入中包含段落原文（不含標點）
-            // 3. 段落很短（<=15字）且用戶輸入中包含部分關鍵字
+            // 3. 段落很短（<=20字）且用戶輸入中包含部分關鍵字（允許連續短句）
             const isDirectlyIncluded = queryText.includes(item.original);
             const isCleanIncluded = itemOriginalClean.length > 0 && queryTextClean.includes(itemOriginalClean);
-            const isShortAndRelated = item.original.length <= 15 && 
+            const isShortAndRelated = item.original.length <= 20 && 
                                      itemOriginalClean.split('').some(char => queryTextClean.includes(char));
             
             const isIncluded = isDirectlyIncluded || isCleanIncluded || isShortAndRelated;
@@ -231,28 +242,50 @@ class BuddhistTextSearcher {
             if (isIncluded) {
                 mergedText += '\n\n' + item.explanation;
                 splitCount++;
-                console.log(`  合併段落 ${splitCount}：${item.original.substring(0, 30)}...`);
+                consecutiveMissed = 0; // 重置連續未匹配計數
+                console.log(`  合併段落 ${splitCount}：${item.original.substring(0, 40)}...`);
             } else {
-                // 如果連續匹配中斷，停止查找
-                break;
+                consecutiveMissed++;
+                // 如果連續多段未匹配，停止查找
+                if (consecutiveMissed > maxConsecutiveMissed) {
+                    console.log(`  連續 ${consecutiveMissed} 段未匹配，停止查找`);
+                    break;
+                }
             }
         }
         
         // 也檢查下一頁（如果有的話），以防跨頁情況
-        if (pageIndex + 1 < this.data.length && splitCount <= 5) {
+        // 如果當前頁最後一段有匹配，繼續檢查下一頁
+        if (pageIndex + 1 < this.data.length && consecutiveMissed <= maxConsecutiveMissed) {
             const nextPage = this.data[pageIndex + 1];
             const nextItems = nextPage.items || [];
+            let nextConsecutiveMissed = 0;
             
-            // 只檢查下一頁的第一個項目
-            if (nextItems.length > 0) {
-                const firstNextItem = nextItems[0];
-                if (firstNextItem.original && firstNextItem.explanation) {
-                    // 如果查詢文本包含下一頁第一段的原文，也加入
-                    if (queryText.includes(firstNextItem.original) || 
-                        firstNextItem.original.length <= 15) {
-                        mergedText += '\n\n' + firstNextItem.explanation;
-                        splitCount++;
-                        console.log(`  跨頁合併段落 ${splitCount}：${firstNextItem.original.substring(0, 30)}...`);
+            // 檢查下一頁的多個項目（最多檢查前10段）
+            for (let i = 0; i < nextItems.length && i < 10 && nextConsecutiveMissed <= maxConsecutiveMissed; i++) {
+                const item = nextItems[i];
+                if (!item.original || !item.explanation) {
+                    nextConsecutiveMissed++;
+                    continue;
+                }
+                
+                const itemOriginalClean = item.original.replace(/[，。！？；：、\s《》「」『』【】〔〕〈〉()（）]/g, '');
+                const isDirectlyIncluded = queryText.includes(item.original);
+                const isCleanIncluded = itemOriginalClean.length > 0 && queryTextClean.includes(itemOriginalClean);
+                const isShortAndRelated = item.original.length <= 20 && 
+                                         itemOriginalClean.split('').some(char => queryTextClean.includes(char));
+                
+                const isIncluded = isDirectlyIncluded || isCleanIncluded || isShortAndRelated;
+                
+                if (isIncluded) {
+                    mergedText += '\n\n' + item.explanation;
+                    splitCount++;
+                    nextConsecutiveMissed = 0;
+                    console.log(`  跨頁合併段落 ${splitCount}：${item.original.substring(0, 40)}...`);
+                } else {
+                    nextConsecutiveMissed++;
+                    if (nextConsecutiveMissed > maxConsecutiveMissed) {
+                        break;
                     }
                 }
             }
