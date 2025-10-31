@@ -375,18 +375,6 @@
             document.getElementById('regenerateQuestionsBtn').style.display = 'none';
         }
 
-        function copyResult() {
-            const outputText = document.getElementById('outputText');
-            if (!outputText.value.trim()) {
-                alert('沒有翻譯結果可以複製！');
-                return;
-            }
-            
-            outputText.select();
-            document.execCommand('copy');
-            alert('翻譯結果已複製到剪貼簿！');
-        }
-
         // 自動搜尋解釋並填入
         function tryAutoFillExplanation() {
             const inputText = document.getElementById('inputText').value.trim();
