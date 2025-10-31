@@ -172,7 +172,8 @@ class BuddhistTextSearcher {
         }
         
         console.log('找到匹配結果，分數：', result.score);
-        console.log('匹配到的原文：', result.original);
+        console.log('匹配到的原文：', result.original.substring(0, 80) + '...');
+        console.log('匹配段落所在頁面：', result.page);
         
         // 使用完整輸入文字來查找並合併後續相關段落
         const mergedExplanation = this.findAndMergeSubsequentParagraphs(originalText, result);
@@ -199,17 +200,36 @@ class BuddhistTextSearcher {
         const items = page.items || [];
         
         // 找到第一個匹配在 items 中的位置
+        // 使用寬鬆的匹配，因為 original 可能有前綴或格式差異
         let startIndex = -1;
         for (let i = 0; i < items.length; i++) {
+            // 精確匹配
             if (items[i].original === firstMatch.original && items[i].explanation === firstMatch.explanation) {
                 startIndex = i;
                 break;
             }
+            // 如果精確匹配失敗，嘗試寬鬆匹配（去除前綴、標點後比對）
+            const itemClean = items[i].original.replace(/^[^《]*《/, '《').replace(/[，。！？；：、\s《》「」『』【】〔〕〈〉()（）]/g, '');
+            const matchClean = firstMatch.original.replace(/^[^《]*《/, '《').replace(/[，。！？；：、\s《》「」『』【】〔〕〈〉()（）]/g, '');
+            if (itemClean.includes(matchClean) || matchClean.includes(itemClean)) {
+                // 確認 explanation 也相似
+                if (items[i].explanation && firstMatch.explanation && 
+                    (items[i].explanation.includes(firstMatch.explanation.substring(0, 20)) ||
+                     firstMatch.explanation.includes(items[i].explanation.substring(0, 20)))) {
+                    startIndex = i;
+                    console.log(`  定位到段落位置：${i} (寬鬆匹配)`);
+                    break;
+                }
+            }
         }
         
         if (startIndex === -1) {
+            console.log(`  ⚠️ 無法定位匹配段落在資料中的位置`);
+            console.log(`  匹配到的 original: ${firstMatch.original.substring(0, 50)}...`);
             return { text: mergedText, splitCount: 1 };
         }
+        
+        console.log(`  ✅ 找到起始段落位置：${startIndex}，頁面共有 ${items.length} 個段落`);
         
         // 檢查後續項目是否應該包含
         // 策略：檢查用戶輸入中是否包含後續段落的原文
@@ -244,12 +264,29 @@ class BuddhistTextSearcher {
             const charMatchRatio = itemOriginalClean.length > 0 ? commonChars.length / itemOriginalClean.length : 0;
             const isShortAndRelated = item.original.length <= 20 && charMatchRatio > 0.6;
             
-            const isIncluded = isDirectlyIncluded || isCleanIncluded || isShortAndRelated;
+            // 額外檢查：如果用戶輸入中包含了該段落的關鍵字（至少3個字符連續匹配）
+            let hasKeyPhrase = false;
+            if (itemOriginalClean.length >= 3) {
+                // 檢查是否有至少3個連續字符在用戶輸入中
+                for (let j = 0; j <= itemOriginalClean.length - 3; j++) {
+                    const phrase = itemOriginalClean.substring(j, j + 3);
+                    if (queryTextClean.includes(phrase)) {
+                        hasKeyPhrase = true;
+                        break;
+                    }
+                }
+            }
             
-            // 調試日誌：顯示比對詳情（僅前5段）
-            if (!isIncluded && i < startIndex + 5) {
-                console.log(`  未匹配段落 ${i - startIndex + 1}：${item.original.substring(0, 40)}...`);
-                console.log(`    直接包含：${isDirectlyIncluded}, 清理後包含：${isCleanIncluded}, 短句相關：${isShortAndRelated} (字符匹配率: ${charMatchRatio.toFixed(2)})`);
+            const isIncluded = isDirectlyIncluded || isCleanIncluded || isShortAndRelated || hasKeyPhrase;
+            
+            // 調試日誌：顯示比對詳情（檢查前10段）
+            if (i < startIndex + 10) {
+                if (isIncluded) {
+                    console.log(`  ✓ 匹配段落 ${i - startIndex + 1}：${item.original.substring(0, 40)}...`);
+                } else {
+                    console.log(`  ✗ 未匹配段落 ${i - startIndex + 1}：${item.original.substring(0, 40)}...`);
+                    console.log(`    直接包含：${isDirectlyIncluded}, 清理後包含：${isCleanIncluded}, 短句相關：${isShortAndRelated}, 關鍵詞組：${hasKeyPhrase} (字符匹配率: ${charMatchRatio.toFixed(2)})`);
+                }
             }
             
             if (isIncluded) {
