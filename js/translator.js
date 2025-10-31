@@ -199,7 +199,7 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `你是佛法翻譯專家，參考佛學大師的口語化解釋，將古代的佛學用語或文言文翻譯成現代口語化白話文。
+                            text: `你是佛法翻譯專家，參考日常師父的口語化解釋，將古代的佛學用語或文言文翻譯成現代口語化白話文。
 
 要求：
 1. 準確：忠實原文意思
@@ -210,7 +210,7 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
 風格：
 - 保持原文語氣和情感
 - 不用分段落
-- 只輸出整理後的白話文，不要重複附上大師解釋
+- 只輸出整理後的白話文，不要重複附上師父解釋
 
 輸出格式：
 - 翻譯後的白話文(段落)
@@ -220,7 +220,7 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
 請翻譯以下佛法：
 
 佛法：${text}
-${oralExplanation ? `參考佛學大師的口語化解釋：${oralExplanation}` : ''}
+${oralExplanation ? `參考日常師父的口語化解釋：${oralExplanation}` : ''}
 
 請提供口語化、準確、流暢、易懂的現代翻譯。`
                         }]
