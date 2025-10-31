@@ -158,17 +158,107 @@ class BuddhistTextSearcher {
         return sorted.length > 0 && sorted[0].score > 0.15 ? sorted[0] : null;
     }
 
-    // 獲取解釋（主要介面）
+    // 獲取解釋（主要介面，支援多段匹配）
     getExplanation(originalText) {
         console.log('搜尋解釋，查詢文字：', originalText.substring(0, 50));
         const result = this.search(originalText, 1);
-        if (result) {
-            console.log('找到匹配結果，分數：', result.score);
-            return result.explanation;
-        } else {
+        if (!result) {
             console.log('未找到匹配結果');
             return null;
         }
+        
+        console.log('找到匹配結果，分數：', result.score);
+        console.log('匹配到的原文：', result.original);
+        
+        // 查找並合併後續相關段落
+        const mergedExplanation = this.findAndMergeSubsequentParagraphs(originalText, result);
+        
+        if (mergedExplanation.splitCount > 1) {
+            console.log(`✅ 已合併 ${mergedExplanation.splitCount} 段解釋`);
+        }
+        
+        return mergedExplanation.text;
+    }
+    
+    // 查找並合併後續段落
+    findAndMergeSubsequentParagraphs(queryText, firstMatch) {
+        let mergedText = firstMatch.explanation;
+        let splitCount = 1;
+        
+        // 找到第一個匹配所在的頁面
+        const pageIndex = this.data.findIndex(page => page.page === firstMatch.page);
+        if (pageIndex === -1) {
+            return { text: mergedText, splitCount: 1 };
+        }
+        
+        const page = this.data[pageIndex];
+        const items = page.items || [];
+        
+        // 找到第一個匹配在 items 中的位置
+        let startIndex = -1;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].original === firstMatch.original && items[i].explanation === firstMatch.explanation) {
+                startIndex = i;
+                break;
+            }
+        }
+        
+        if (startIndex === -1) {
+            return { text: mergedText, splitCount: 1 };
+        }
+        
+        // 檢查後續項目是否應該包含
+        // 策略：檢查用戶輸入中是否包含後續段落的原文
+        for (let i = startIndex + 1; i < items.length && splitCount < 10; i++) {
+            const item = items[i];
+            if (!item.original || !item.explanation) continue;
+            
+            // 清理原文用於比對（去除標點和空白）
+            const itemOriginalClean = item.original.replace(/[，。！？；：、\s《》「」『』【】〔〕〈〉()（）]/g, '');
+            const queryTextClean = queryText.replace(/[，。！？；：、\s《》「」『』【】〔〕〈〉()（）]/g, '');
+            
+            // 判斷是否應該包含：
+            // 1. 用戶輸入中包含完整的段落原文（含標點）
+            // 2. 用戶輸入中包含段落原文（不含標點）
+            // 3. 段落很短（<=15字）且用戶輸入中包含部分關鍵字
+            const isDirectlyIncluded = queryText.includes(item.original);
+            const isCleanIncluded = itemOriginalClean.length > 0 && queryTextClean.includes(itemOriginalClean);
+            const isShortAndRelated = item.original.length <= 15 && 
+                                     itemOriginalClean.split('').some(char => queryTextClean.includes(char));
+            
+            const isIncluded = isDirectlyIncluded || isCleanIncluded || isShortAndRelated;
+            
+            if (isIncluded) {
+                mergedText += '\n\n' + item.explanation;
+                splitCount++;
+                console.log(`  合併段落 ${splitCount}：${item.original.substring(0, 30)}...`);
+            } else {
+                // 如果連續匹配中斷，停止查找
+                break;
+            }
+        }
+        
+        // 也檢查下一頁（如果有的話），以防跨頁情況
+        if (pageIndex + 1 < this.data.length && splitCount <= 5) {
+            const nextPage = this.data[pageIndex + 1];
+            const nextItems = nextPage.items || [];
+            
+            // 只檢查下一頁的第一個項目
+            if (nextItems.length > 0) {
+                const firstNextItem = nextItems[0];
+                if (firstNextItem.original && firstNextItem.explanation) {
+                    // 如果查詢文本包含下一頁第一段的原文，也加入
+                    if (queryText.includes(firstNextItem.original) || 
+                        firstNextItem.original.length <= 15) {
+                        mergedText += '\n\n' + firstNextItem.explanation;
+                        splitCount++;
+                        console.log(`  跨頁合併段落 ${splitCount}：${firstNextItem.original.substring(0, 30)}...`);
+                    }
+                }
+            }
+        }
+        
+        return { text: mergedText, splitCount };
     }
 }
 
