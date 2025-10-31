@@ -474,7 +474,7 @@ ${oralExplanation ? `日常師父的解釋：${oralExplanation}` : ''}
                 }],
                 generationConfig: {
                     temperature: 0.4,
-                    maxOutputTokens: 2000,
+                    maxOutputTokens: 8000,
                     topP: 0.9,
                     topK: 50
                 },
@@ -607,7 +607,7 @@ ${oralExplanation ? `日常師父的解釋：${oralExplanation}` : ''}
                 }],
                 generationConfig: {
                     temperature: 0.5,
-                    maxOutputTokens: 2000,
+                    maxOutputTokens: 8000,
                     topP: 0.9,
                     topK: 50
                 },
