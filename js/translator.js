@@ -663,40 +663,61 @@ async function translateText() {
         
         outputText.value = translation;
         
-        // 生成大綱與重點和學習題綱（使用 Gemini API 時才生成）
+        // 翻譯完成後，分別獨立生成大綱與重點和學習題綱（使用 Gemini API 時才生成）
+        // 兩個請求完全獨立，互不影響，失敗也不會中斷另一個
         if (translator.geminiKeys && translator.geminiKeys.length > 0) {
-            try {
-                // 生成大綱與重點
-                if (loading.querySelector('p')) {
-                    loading.querySelector('p').textContent = 'AI 正在生成大綱與重點...';
-                }
-                const outline = await translator.generateOutlineAndKeyPoints(inputText, oralExplanation);
-                const outlineText = document.getElementById('outlineText');
-                if (outlineText) {
-                    outlineText.value = outline;
-                    const regenerateOutlineBtn = document.getElementById('regenerateOutlineBtn');
-                    if (regenerateOutlineBtn) {
-                        regenerateOutlineBtn.style.display = 'flex';
+            const outlineText = document.getElementById('outlineText');
+            const questionsText = document.getElementById('questionsText');
+            const regenerateOutlineBtn = document.getElementById('regenerateOutlineBtn');
+            const regenerateQuestionsBtn = document.getElementById('regenerateQuestionsBtn');
+            
+            // 第一個請求：生成大綱與重點（完全獨立執行）
+            (async () => {
+                try {
+                    if (outlineText) {
+                        outlineText.value = '正在生成大綱與重點...';
+                    }
+                    const outline = await translator.generateOutlineAndKeyPoints(inputText, oralExplanation);
+                    if (outlineText) {
+                        outlineText.value = outline;
+                        if (regenerateOutlineBtn) {
+                            regenerateOutlineBtn.style.display = 'flex';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Generate outline error:', error);
+                    if (outlineText) {
+                        outlineText.value = '生成失敗：' + (error.message || '未知錯誤') + '\n\n提示：您可以點擊「重新生成」按鈕再次嘗試。';
+                        if (regenerateOutlineBtn) {
+                            regenerateOutlineBtn.style.display = 'flex';
+                        }
                     }
                 }
-                
-                // 生成學習題綱
-                if (loading.querySelector('p')) {
-                    loading.querySelector('p').textContent = 'AI 正在生成學習題綱...';
-                }
-                const questions = await translator.generateStudyQuestions(inputText, oralExplanation);
-                const questionsText = document.getElementById('questionsText');
-                if (questionsText) {
-                    questionsText.value = questions;
-                    const regenerateQuestionsBtn = document.getElementById('regenerateQuestionsBtn');
-                    if (regenerateQuestionsBtn) {
-                        regenerateQuestionsBtn.style.display = 'flex';
+            })();
+            
+            // 第二個請求：生成學習題綱（完全獨立執行，與第一個請求並行）
+            (async () => {
+                try {
+                    if (questionsText) {
+                        questionsText.value = '正在生成學習題綱...';
+                    }
+                    const questions = await translator.generateStudyQuestions(inputText, oralExplanation);
+                    if (questionsText) {
+                        questionsText.value = questions;
+                        if (regenerateQuestionsBtn) {
+                            regenerateQuestionsBtn.style.display = 'flex';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Generate questions error:', error);
+                    if (questionsText) {
+                        questionsText.value = '生成失敗：' + (error.message || '未知錯誤') + '\n\n提示：您可以點擊「重新生成」按鈕再次嘗試。';
+                        if (regenerateQuestionsBtn) {
+                            regenerateQuestionsBtn.style.display = 'flex';
+                        }
                     }
                 }
-            } catch (error) {
-                console.error('Generate additional content error:', error);
-                // 即使生成失敗也不影響翻譯結果
-            }
+            })();
         }
     } catch (error) {
         // 如果所有方法都失敗，使用規則翻譯
