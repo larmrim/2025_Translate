@@ -253,6 +253,10 @@
                         <i class="fas fa-comment-dots"></i>
                         口語解釋
                     </div>
+                    <div id="sourceInfo" class="source-info" style="display: none; margin-bottom: 10px; padding: 10px; background: #e3f2fd; border-radius: 5px; border-left: 4px solid #2196F3;">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="sourceInfoText"></span>
+                    </div>
                     <textarea id="oralExplanation" class="textarea" placeholder="請輸入您對這段佛法的初步理解或口語解釋...&#10;&#10;例如：&#10;這句是說聽到『常住』這兩個字，就能生生世世不墮惡趣"></textarea>
                 </div>
 
@@ -308,6 +312,8 @@
             document.getElementById('oralExplanation').value = '';
             document.getElementById('inputText').value = '';
             document.getElementById('outputText').value = '';
+            // 清除來源資訊顯示
+            document.getElementById('sourceInfo').style.display = 'none';
         }
 
         function copyResult() {
@@ -348,15 +354,28 @@
             
             console.log('✅ 開始搜尋解釋...');
             // 嘗試自動搜尋
-            const explanation = buddhistSearcher.getExplanation(inputText);
+            const explanationResult = buddhistSearcher.getExplanation(inputText);
             
-            if (explanation) {
-                explanationField.value = explanation;
-                console.log('✅ 已自動填入解釋，長度：', explanation.length);
+            if (explanationResult && explanationResult.text) {
+                explanationField.value = explanationResult.text;
+                console.log('✅ 已自動填入解釋，長度：', explanationResult.text.length);
+                
+                // 顯示來源資訊
+                const sourceInfo = document.getElementById('sourceInfo');
+                const sourceInfoText = document.getElementById('sourceInfoText');
+                if (explanationResult.title) {
+                    sourceInfoText.textContent = `來源音檔段落：${explanationResult.title}`;
+                    sourceInfo.style.display = 'block';
+                } else {
+                    sourceInfo.style.display = 'none';
+                }
+                
                 // 顯示提示
                 showNotification('✅ 已自動填入佛學大師的解釋', 'success');
             } else {
                 console.log('❌ 未找到匹配的解釋');
+                // 隱藏來源資訊
+                document.getElementById('sourceInfo').style.display = 'none';
             }
         }
 

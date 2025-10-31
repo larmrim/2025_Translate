@@ -174,6 +174,7 @@ class BuddhistTextSearcher {
         console.log('找到匹配結果，分數：', result.score);
         console.log('匹配到的原文：', result.original.substring(0, 80) + '...');
         console.log('匹配段落所在頁面：', result.page);
+        console.log('匹配段落標題：', result.title);
         
         // 使用完整輸入文字來查找並合併後續相關段落
         const mergedExplanation = this.findAndMergeSubsequentParagraphs(originalText, result);
@@ -182,7 +183,12 @@ class BuddhistTextSearcher {
             console.log(`✅ 已合併 ${mergedExplanation.splitCount} 段解釋`);
         }
         
-        return mergedExplanation.text;
+        // 返回包含文字和標題資訊的物件
+        return {
+            text: mergedExplanation.text,
+            title: result.title,
+            page: result.page
+        };
     }
     
     // 查找並合併後續段落
@@ -254,8 +260,15 @@ class BuddhistTextSearcher {
         
         let consecutiveMissed = 0; // 連續未匹配的段落數
         const maxConsecutiveMissed = 2; // 允許最多連續2段未匹配
+        const maxTotalParagraphs = 50; // 最多合併50段（避免過長）
+        const maxTotalLength = 20000; // 最多合併20000字符（避免超出 API 限制）
         
-        for (let i = startIndex + 1; i < items.length && consecutiveMissed <= maxConsecutiveMissed; i++) {
+        for (let i = startIndex + 1; i < items.length && consecutiveMissed <= maxConsecutiveMissed && splitCount < maxTotalParagraphs; i++) {
+            // 檢查總長度限制
+            if (mergedText.length > maxTotalLength) {
+                console.log(`  ⚠️ 已達到總長度限制（${maxTotalLength}字符），停止合併`);
+                break;
+            }
             const item = items[i];
             if (!item.original || !item.explanation) {
                 consecutiveMissed++;
@@ -327,8 +340,14 @@ class BuddhistTextSearcher {
             const nextItems = nextPage.items || [];
             let nextConsecutiveMissed = 0;
             
-            // 檢查下一頁的多個項目（最多檢查前10段）
-            for (let i = 0; i < nextItems.length && i < 10 && nextConsecutiveMissed <= maxConsecutiveMissed; i++) {
+            // 檢查下一頁的多個項目（最多檢查前20段，但總數不超過 maxTotalParagraphs）
+            for (let i = 0; i < nextItems.length && i < 20 && nextConsecutiveMissed <= maxConsecutiveMissed && splitCount < maxTotalParagraphs; i++) {
+                
+                // 檢查總長度限制
+                if (mergedText.length > maxTotalLength) {
+                    console.log(`  ⚠️ 已達到總長度限制（${maxTotalLength}字符），停止跨頁合併`);
+                    break;
+                }
                 const item = nextItems[i];
                 if (!item.original || !item.explanation) {
                     nextConsecutiveMissed++;
