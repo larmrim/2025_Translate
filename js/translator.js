@@ -437,21 +437,20 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
 
     // 生成大綱與重點
     async generateOutlineAndKeyPoints(text, oralExplanation = '') {
+        console.log('=== 開始生成大綱與重點 ===');
+        console.log('輸入經文長度:', text.length);
+        console.log('解釋長度:', oralExplanation.length);
+        
         try {
             // 如果還沒有選擇模型，自動選擇最佳模型
             if (!this.geminiUrl || this.geminiUrl.includes('gemini-pro:generateContent')) {
                 await this.selectBestGeminiModel();
             }
             
-            const response = await fetch(`${this.geminiUrl}?key=${this.getCurrentGeminiKey()}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: `你是佛法學習專家，請根據以下佛法經文和日常師父的解釋，整理出大綱與重點。
+            const url = `${this.geminiUrl}?key=${this.getCurrentGeminiKey()}`;
+            console.log('API URL:', url.replace(/key=[^&]+/, 'key=***'));
+            
+            const promptText = `你是佛法學習專家，請根據以下佛法經文和日常師父的解釋，整理出大綱與重點。
 
 要求：
 1. 提取核心概念和主要論點
@@ -467,55 +466,91 @@ ${oralExplanation ? `用戶的口語理解：${oralExplanation}` : ''}
 佛法經文：${text}
 ${oralExplanation ? `日常師父的解釋：${oralExplanation}` : ''}
 
-請提供大綱與重點：`
-                        }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.4,
-                        maxOutputTokens: 2000,
-                        topP: 0.9,
-                        topK: 50
+請提供大綱與重點：`;
+            
+            const requestBody = {
+                contents: [{
+                    parts: [{ text: promptText }]
+                }],
+                generationConfig: {
+                    temperature: 0.4,
+                    maxOutputTokens: 2000,
+                    topP: 0.9,
+                    topK: 50
+                },
+                safetySettings: [
+                    {
+                        category: "HARM_CATEGORY_HARASSMENT",
+                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
                     },
-                    safetySettings: [
-                        {
-                            category: "HARM_CATEGORY_HARASSMENT",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_HATE_SPEECH",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                        }
-                    ]
-                })
+                    {
+                        category: "HARM_CATEGORY_HATE_SPEECH",
+                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                    }
+                ]
+            };
+            
+            console.log('Prompt 長度:', promptText.length);
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
             });
 
+            console.log('Response status:', response.status, response.statusText);
+
             if (!response.ok) {
-                throw new Error(`API 錯誤: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Response error text:', errorText.substring(0, 500));
+                throw new Error(`API 錯誤: ${response.status} - ${errorText.substring(0, 200)}`);
             }
 
             const data = await response.json();
+            console.log('Response data structure:', {
+                hasCandidates: !!data.candidates,
+                candidatesLength: data.candidates?.length || 0,
+                firstCandidate: data.candidates?.[0] ? {
+                    hasContent: !!data.candidates[0].content,
+                    hasParts: !!data.candidates[0].content?.parts,
+                    partsLength: data.candidates[0].content?.parts?.length || 0,
+                    hasText: !!data.candidates[0].text,
+                    finishReason: data.candidates[0].finishReason,
+                    role: data.candidates[0].content?.role
+                } : null
+            });
             
             // 使用與 translateWithGemini 相同的寬鬆解析邏輯
             if (data.candidates && data.candidates.length > 0) {
                 const candidate = data.candidates[0];
+                console.log('Candidate finishReason:', candidate.finishReason);
                 
                 // 檢查不同的回應結構
                 if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-                    return candidate.content.parts[0].text.trim();
+                    const result = candidate.content.parts[0].text.trim();
+                    console.log('✅ 成功解析大綱與重點，長度:', result.length);
+                    return result;
                 } else if (candidate.text) {
-                    return candidate.text.trim();
+                    const result = candidate.text.trim();
+                    console.log('✅ 成功解析大綱與重點（text字段），長度:', result.length);
+                    return result;
                 } else if (candidate.parts && candidate.parts.length > 0) {
-                    return candidate.parts[0].text.trim();
+                    const result = candidate.parts[0].text.trim();
+                    console.log('✅ 成功解析大綱與重點（parts字段），長度:', result.length);
+                    return result;
                 } else if (candidate.content && candidate.content.role === 'model') {
                     // 處理只有 role 沒有 parts 的情況
-                    console.warn('Gemini API 回應只有 role 沒有 parts，可能是 token 限制或模型問題');
+                    console.warn('⚠️ Gemini API 回應只有 role 沒有 parts');
+                    console.warn('Finish reason:', candidate.finishReason);
                     throw new Error('Gemini API 回應不完整：可能是 token 限制或模型問題，請嘗試縮短輸入文字');
                 } else {
-                    console.error('Unexpected candidate structure:', candidate);
+                    console.error('❌ Unexpected candidate structure:', JSON.stringify(candidate, null, 2).substring(0, 1000));
                     throw new Error('Gemini API 回應格式異常：無法解析候選回應');
                 }
             } else {
-                console.error('Unexpected Gemini response format:', data);
+                console.error('❌ Unexpected Gemini response format:', JSON.stringify(data, null, 2).substring(0, 500));
                 throw new Error('Gemini API 回應格式異常：沒有候選回應');
             }
         } catch (error) {
@@ -526,6 +561,10 @@ ${oralExplanation ? `日常師父的解釋：${oralExplanation}` : ''}
 
     // 生成學習題綱
     async generateStudyQuestions(text, oralExplanation = '') {
+        console.log('=== 開始生成學習題綱 ===');
+        console.log('輸入經文長度:', text.length);
+        console.log('解釋長度:', oralExplanation.length);
+        
         try {
             // 計算題目數量（根據經文長度，最少3題，最多10題）
             const textLength = text.length;
@@ -534,20 +573,17 @@ ${oralExplanation ? `日常師父的解釋：${oralExplanation}` : ''}
             if (textLength > 500) questionCount = 7;
             if (textLength > 1000) questionCount = 10;
             
+            console.log('計算的題目數量:', questionCount);
+            
             // 如果還沒有選擇模型，自動選擇最佳模型
             if (!this.geminiUrl || this.geminiUrl.includes('gemini-pro:generateContent')) {
                 await this.selectBestGeminiModel();
             }
             
-            const response = await fetch(`${this.geminiUrl}?key=${this.getCurrentGeminiKey()}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: `你是佛法學習專家，請根據以下佛法經文和日常師父的解釋，設計 ${questionCount} 道學習題綱。
+            const url = `${this.geminiUrl}?key=${this.getCurrentGeminiKey()}`;
+            console.log('API URL:', url.replace(/key=[^&]+/, 'key=***'));
+            
+            const promptText = `你是佛法學習專家，請根據以下佛法經文和日常師父的解釋，設計 ${questionCount} 道學習題綱。
 
 要求：
 1. 題目要能幫助理解經文的核心內容
@@ -563,59 +599,95 @@ ${oralExplanation ? `日常師父的解釋：${oralExplanation}` : ''}
 佛法經文：${text}
 ${oralExplanation ? `日常師父的解釋：${oralExplanation}` : ''}
 
-請提供 ${questionCount} 道學習題綱：`
-                        }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.5,
-                        maxOutputTokens: 2000,
-                        topP: 0.9,
-                        topK: 50
+請提供 ${questionCount} 道學習題綱：`;
+            
+            const requestBody = {
+                contents: [{
+                    parts: [{ text: promptText }]
+                }],
+                generationConfig: {
+                    temperature: 0.5,
+                    maxOutputTokens: 2000,
+                    topP: 0.9,
+                    topK: 50
+                },
+                safetySettings: [
+                    {
+                        category: "HARM_CATEGORY_HARASSMENT",
+                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
                     },
-                    safetySettings: [
-                        {
-                            category: "HARM_CATEGORY_HARASSMENT",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_HATE_SPEECH",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                        }
-                    ]
-                })
+                    {
+                        category: "HARM_CATEGORY_HATE_SPEECH",
+                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                    }
+                ]
+            };
+            
+            console.log('Prompt 長度:', promptText.length);
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
             });
 
+            console.log('Response status:', response.status, response.statusText);
+
             if (!response.ok) {
-                throw new Error(`API 錯誤: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Response error text:', errorText.substring(0, 500));
+                throw new Error(`API 錯誤: ${response.status} - ${errorText.substring(0, 200)}`);
             }
 
             const data = await response.json();
+            console.log('Response data structure:', {
+                hasCandidates: !!data.candidates,
+                candidatesLength: data.candidates?.length || 0,
+                firstCandidate: data.candidates?.[0] ? {
+                    hasContent: !!data.candidates[0].content,
+                    hasParts: !!data.candidates[0].content?.parts,
+                    partsLength: data.candidates[0].content?.parts?.length || 0,
+                    hasText: !!data.candidates[0].text,
+                    finishReason: data.candidates[0].finishReason,
+                    role: data.candidates[0].content?.role
+                } : null
+            });
             
             // 使用與 translateWithGemini 相同的寬鬆解析邏輯
             if (data.candidates && data.candidates.length > 0) {
                 const candidate = data.candidates[0];
+                console.log('Candidate finishReason:', candidate.finishReason);
                 
                 // 檢查不同的回應結構
                 if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-                    return candidate.content.parts[0].text.trim();
+                    const result = candidate.content.parts[0].text.trim();
+                    console.log('✅ 成功解析學習題綱，長度:', result.length);
+                    return result;
                 } else if (candidate.text) {
-                    return candidate.text.trim();
+                    const result = candidate.text.trim();
+                    console.log('✅ 成功解析學習題綱（text字段），長度:', result.length);
+                    return result;
                 } else if (candidate.parts && candidate.parts.length > 0) {
-                    return candidate.parts[0].text.trim();
+                    const result = candidate.parts[0].text.trim();
+                    console.log('✅ 成功解析學習題綱（parts字段），長度:', result.length);
+                    return result;
                 } else if (candidate.content && candidate.content.role === 'model') {
                     // 處理只有 role 沒有 parts 的情況
-                    console.warn('Gemini API 回應只有 role 沒有 parts，可能是 token 限制或模型問題');
+                    console.warn('⚠️ Gemini API 回應只有 role 沒有 parts');
+                    console.warn('Finish reason:', candidate.finishReason);
                     throw new Error('Gemini API 回應不完整：可能是 token 限制或模型問題，請嘗試縮短輸入文字');
                 } else {
-                    console.error('Unexpected candidate structure:', candidate);
+                    console.error('❌ Unexpected candidate structure:', JSON.stringify(candidate, null, 2).substring(0, 1000));
                     throw new Error('Gemini API 回應格式異常：無法解析候選回應');
                 }
             } else {
-                console.error('Unexpected Gemini response format:', data);
+                console.error('❌ Unexpected Gemini response format:', JSON.stringify(data, null, 2).substring(0, 500));
                 throw new Error('Gemini API 回應格式異常：沒有候選回應');
             }
         } catch (error) {
-            console.error('Generate questions error:', error);
+            console.error('❌ Generate questions error:', error);
             throw error;
         }
     }
@@ -801,8 +873,6 @@ async function regenerateQuestions() {
     }
 }
 
-// API Key 設置功能
-function setupAPIKey() {
     const options = [
         '1. Google Gemini API Key（推薦，免費額度大）',
         '2. OpenAI API Key（有免費額度）',
@@ -914,31 +984,6 @@ function setupDeepSeekKey() {
     }
 }
 
-// 添加 API Key 設置按鈕
-document.addEventListener('DOMContentLoaded', function() {
-    const controls = document.querySelector('.controls');
-    
-    // 設置 API Key 按鈕
-    const apiKeyBtn = document.createElement('button');
-    apiKeyBtn.className = 'btn btn-secondary';
-    apiKeyBtn.innerHTML = '<i class="fas fa-key"></i> 設置 API Key';
-    apiKeyBtn.onclick = setupAPIKey;
-    controls.appendChild(apiKeyBtn);
-    
-    // 查看當前設置按鈕
-    const statusBtn = document.createElement('button');
-    statusBtn.className = 'btn btn-secondary';
-    statusBtn.innerHTML = '<i class="fas fa-info-circle"></i> 查看設置';
-    statusBtn.onclick = showCurrentSettings;
-    controls.appendChild(statusBtn);
-    
-    // 列出可用模型按鈕
-    const listModelsBtn = document.createElement('button');
-    listModelsBtn.className = 'btn btn-secondary';
-    listModelsBtn.innerHTML = '<i class="fas fa-list"></i> 列出模型';
-    listModelsBtn.onclick = listAvailableModels;
-    controls.appendChild(listModelsBtn);
-});
 
 // 顯示當前設置
 function showCurrentSettings() {
