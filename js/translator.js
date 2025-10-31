@@ -495,16 +495,29 @@ ${oralExplanation ? `日常師父的解釋：${oralExplanation}` : ''}
 
             const data = await response.json();
             
+            // 使用與 translateWithGemini 相同的寬鬆解析邏輯
             if (data.candidates && data.candidates.length > 0) {
                 const candidate = data.candidates[0];
+                
+                // 檢查不同的回應結構
                 if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
                     return candidate.content.parts[0].text.trim();
                 } else if (candidate.text) {
                     return candidate.text.trim();
+                } else if (candidate.parts && candidate.parts.length > 0) {
+                    return candidate.parts[0].text.trim();
+                } else if (candidate.content && candidate.content.role === 'model') {
+                    // 處理只有 role 沒有 parts 的情況
+                    console.warn('Gemini API 回應只有 role 沒有 parts，可能是 token 限制或模型問題');
+                    throw new Error('Gemini API 回應不完整：可能是 token 限制或模型問題，請嘗試縮短輸入文字');
+                } else {
+                    console.error('Unexpected candidate structure:', candidate);
+                    throw new Error('Gemini API 回應格式異常：無法解析候選回應');
                 }
+            } else {
+                console.error('Unexpected Gemini response format:', data);
+                throw new Error('Gemini API 回應格式異常：沒有候選回應');
             }
-            
-            throw new Error('無法解析回應格式');
         } catch (error) {
             console.error('Generate outline error:', error);
             throw error;
@@ -578,16 +591,29 @@ ${oralExplanation ? `日常師父的解釋：${oralExplanation}` : ''}
 
             const data = await response.json();
             
+            // 使用與 translateWithGemini 相同的寬鬆解析邏輯
             if (data.candidates && data.candidates.length > 0) {
                 const candidate = data.candidates[0];
+                
+                // 檢查不同的回應結構
                 if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
                     return candidate.content.parts[0].text.trim();
                 } else if (candidate.text) {
                     return candidate.text.trim();
+                } else if (candidate.parts && candidate.parts.length > 0) {
+                    return candidate.parts[0].text.trim();
+                } else if (candidate.content && candidate.content.role === 'model') {
+                    // 處理只有 role 沒有 parts 的情況
+                    console.warn('Gemini API 回應只有 role 沒有 parts，可能是 token 限制或模型問題');
+                    throw new Error('Gemini API 回應不完整：可能是 token 限制或模型問題，請嘗試縮短輸入文字');
+                } else {
+                    console.error('Unexpected candidate structure:', candidate);
+                    throw new Error('Gemini API 回應格式異常：無法解析候選回應');
                 }
+            } else {
+                console.error('Unexpected Gemini response format:', data);
+                throw new Error('Gemini API 回應格式異常：沒有候選回應');
             }
-            
-            throw new Error('無法解析回應格式');
         } catch (error) {
             console.error('Generate questions error:', error);
             throw error;
