@@ -227,7 +227,7 @@ ${oralExplanation ? `參考日常師父的口語化解釋：${oralExplanation}` 
                     }],
                     generationConfig: {
                         temperature: 0.3,
-                        maxOutputTokens: 4000,
+                        maxOutputTokens: 8192,  // 增加到 8192 以支持更長的翻譯輸出
                         topP: 0.9,
                         topK: 50
                     },
