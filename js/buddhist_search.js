@@ -398,17 +398,46 @@ let buddhistSearcher = null;
 async function loadBuddhistData() {
     try {
         console.log('開始載入佛法資料...');
-        const response = await fetch('data/nanshan_data.json');
-        if (!response.ok) {
-            console.error('無法載入佛法資料，HTTP 狀態碼：', response.status);
-            console.warn('將使用手動輸入模式');
+        const allData = [];
+        
+        // 載入南山律資料
+        try {
+            console.log('正在載入南山律資料...');
+            const nanshanResponse = await fetch('data/nanshan_data.json');
+            if (nanshanResponse.ok) {
+                const nanshanData = await nanshanResponse.json();
+                allData.push(...nanshanData);
+                console.log(`✅ 南山律資料載入成功，共有 ${nanshanData.length} 頁`);
+            } else {
+                console.warn(`⚠️ 無法載入南山律資料，HTTP 狀態碼：${nanshanResponse.status}`);
+            }
+        } catch (error) {
+            console.warn('⚠️ 載入南山律資料失敗：', error.message);
+        }
+        
+        // 載入廣論資料
+        try {
+            console.log('正在載入廣論資料...');
+            const lamrimResponse = await fetch('data/lamrim1_data.json');
+            if (lamrimResponse.ok) {
+                const lamrimData = await lamrimResponse.json();
+                allData.push(...lamrimData);
+                console.log(`✅ 廣論資料載入成功，共有 ${lamrimData.length} 頁`);
+            } else {
+                console.warn(`⚠️ 無法載入廣論資料，HTTP 狀態碼：${lamrimResponse.status}`);
+            }
+        } catch (error) {
+            console.warn('⚠️ 載入廣論資料失敗：', error.message);
+        }
+        
+        if (allData.length === 0) {
+            console.error('❌ 無法載入任何資料，將使用手動輸入模式');
             return false;
         }
         
-        const data = await response.json();
-        console.log(`資料載入成功，共有 ${data.length} 頁`);
+        console.log(`📚 資料載入完成，總共 ${allData.length} 頁（南山律 + 廣論）`);
         
-        buddhistSearcher = new BuddhistTextSearcher(data);
+        buddhistSearcher = new BuddhistTextSearcher(allData);
         buddhistSearcher.buildIndex();
         
         console.log('✅ 佛法資料載入完成，自動推算功能已啟用');
