@@ -198,7 +198,8 @@ class BuddhistTextSearcher {
         console.log(`匹配段落頁面：${firstMatch.page}`);
         console.log(`匹配段落原文：${firstMatch.original.substring(0, 60)}...`);
         
-        let mergedText = firstMatch.explanation;
+        // 包含 original 和 explanation
+        let mergedText = firstMatch.original + '\n\n' + firstMatch.explanation;
         let splitCount = 1;
         
         // 找到第一個匹配所在的頁面
@@ -319,7 +320,7 @@ class BuddhistTextSearcher {
             console.log(`    → 最終決定：${isIncluded ? '✅ 包含' : '❌ 跳過'}`);
             
             if (isIncluded) {
-                mergedText += '\n\n' + item.explanation;
+                mergedText += '\n\n' + item.original + '\n\n' + item.explanation;
                 splitCount++;
                 consecutiveMissed = 0; // 重置連續未匹配計數
                 console.log(`    ✅ 已合併段落 ${splitCount}，長度：${item.explanation.length}`);
@@ -369,7 +370,7 @@ class BuddhistTextSearcher {
                 const isIncluded = isDirectlyIncluded || isCleanIncluded || isShortAndRelated;
                 
                 if (isIncluded) {
-                    mergedText += '\n\n' + item.explanation;
+                    mergedText += '\n\n' + item.original + '\n\n' + item.explanation;
                     splitCount++;
                     nextConsecutiveMissed = 0;
                     console.log(`  跨頁合併段落 ${splitCount}：${item.original.substring(0, 40)}...`);
