@@ -189,6 +189,47 @@
             padding: 20px;
         }
 
+        .loading-status {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .loading-status-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .loading-status.loading {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .loading-status.success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .loading-status.error {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .loading-status.hidden {
+            display: none;
+        }
+
+        .fa-spinner {
+            animation: spin 1s linear infinite;
+        }
+
         .spinner {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #667eea;
@@ -279,6 +320,14 @@
         </div>
 
         <div class="main-content">
+            <!-- 資料庫載入狀態提示 -->
+            <div id="databaseLoadingStatus" class="loading-status">
+                <div class="loading-status-content">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span id="loadingStatusText">正在載入資料庫，請稍候...</span>
+                </div>
+            </div>
+            
             <div class="translation-section">
                 <div class="input-section">
                     <div class="section-title">

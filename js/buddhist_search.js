@@ -395,15 +395,51 @@ class BuddhistTextSearcher {
 // 全域搜尋器實例（會在資料載入後初始化）
 let buddhistSearcher = null;
 
+// 更新載入狀態的函數
+function updateLoadingStatus(status, message) {
+    const statusElement = document.getElementById('databaseLoadingStatus');
+    const textElement = document.getElementById('loadingStatusText');
+    
+    if (!statusElement || !textElement) return;
+    
+    // 移除所有狀態類別
+    statusElement.classList.remove('loading', 'success', 'error', 'hidden');
+    
+    if (status === 'hidden') {
+        statusElement.classList.add('hidden');
+        return;
+    }
+    
+    // 添加新的狀態類別
+    statusElement.classList.add(status);
+    
+    // 更新圖標和文字
+    const iconElement = statusElement.querySelector('i');
+    if (iconElement) {
+        if (status === 'loading') {
+            iconElement.className = 'fas fa-spinner fa-spin';
+        } else if (status === 'success') {
+            iconElement.className = 'fas fa-check-circle';
+        } else if (status === 'error') {
+            iconElement.className = 'fas fa-exclamation-circle';
+        }
+    }
+    
+    textElement.textContent = message;
+}
+
 // 載入資料並初始化搜尋器
 async function loadBuddhistData() {
     try {
         console.log('開始載入佛法資料...');
+        updateLoadingStatus('loading', '正在載入資料庫，請稍候...');
+        
         const allData = [];
         
         // 載入南山律資料
         try {
             console.log('正在載入南山律資料...');
+            updateLoadingStatus('loading', '正在載入南山律資料...');
             const nanshanResponse = await fetch('data/nanshan_data.json');
             if (nanshanResponse.ok) {
                 const nanshanData = await nanshanResponse.json();
@@ -419,6 +455,7 @@ async function loadBuddhistData() {
         // 載入廣論資料
         try {
             console.log('正在載入廣論資料...');
+            updateLoadingStatus('loading', '正在載入廣論資料...');
             const lamrimResponse = await fetch('data/lamrim1_data.json');
             if (lamrimResponse.ok) {
                 const lamrimData = await lamrimResponse.json();
@@ -433,10 +470,16 @@ async function loadBuddhistData() {
         
         if (allData.length === 0) {
             console.error('❌ 無法載入任何資料，將使用手動輸入模式');
+            updateLoadingStatus('error', '❌ 無法載入資料庫，將使用手動輸入模式');
+            // 3秒後隱藏錯誤訊息
+            setTimeout(() => {
+                updateLoadingStatus('hidden', '');
+            }, 3000);
             return false;
         }
         
         console.log(`📚 資料載入完成，總共 ${allData.length} 頁（南山律 + 廣論）`);
+        updateLoadingStatus('loading', '正在建立索引...');
         
         buddhistSearcher = new BuddhistTextSearcher(allData);
         buddhistSearcher.buildIndex();
@@ -444,10 +487,23 @@ async function loadBuddhistData() {
         console.log('✅ 佛法資料載入完成，自動推算功能已啟用');
         console.log(`索引大小：${buddhistSearcher.index ? buddhistSearcher.index.size : 0} 個關鍵字`);
         
+        // 顯示成功訊息
+        updateLoadingStatus('success', `✅ 資料庫載入完成！共有 ${allData.length} 頁資料，可以開始使用了`);
+        
+        // 3秒後淡出隱藏
+        setTimeout(() => {
+            updateLoadingStatus('hidden', '');
+        }, 3000);
+        
         return true;
     } catch (error) {
         console.error('❌ 載入佛法資料失敗：', error);
         console.error('錯誤詳情：', error.message, error.stack);
+        updateLoadingStatus('error', '❌ 載入資料庫失敗，將使用手動輸入模式');
+        // 3秒後隱藏錯誤訊息
+        setTimeout(() => {
+            updateLoadingStatus('hidden', '');
+        }, 3000);
         return false;
     }
 }
