@@ -282,6 +282,24 @@
             <div class="translation-section">
                 <div class="input-section">
                     <div class="section-title">
+                        <i class="fas fa-edit"></i>
+                        輸入佛法
+                    </div>
+                    <textarea id="inputText" class="textarea" placeholder="請在此輸入您想要翻譯的佛法經文...&#10;&#10;例如：&#10;《歸敬儀》云：「經云：若人得聞常住二字，是人生生不墮惡趣。」"></textarea>
+                    <div class="controls" style="margin-top: 15px;">
+                        <button id="translateBtn" class="btn btn-primary">
+                            <i class="fas fa-magic"></i>
+                            開始AI生成
+                        </button>
+                        <button id="clearBtn" class="btn btn-secondary">
+                            <i class="fas fa-trash"></i>
+                            清除內容
+                        </button>
+                    </div>
+                </div>
+
+                <div class="input-section">
+                    <div class="section-title">
                         <i class="fas fa-comment-dots"></i>
                         口語解釋
                     </div>
@@ -290,14 +308,6 @@
                         <span id="sourceInfoText"></span>
                     </div>
                     <textarea id="oralExplanation" class="textarea" placeholder="請輸入您對這段佛法的初步理解或口語解釋...&#10;&#10;例如：&#10;這句是說聽到『常住』這兩個字，就能生生世世不墮惡趣"></textarea>
-                </div>
-
-                <div class="input-section">
-                    <div class="section-title">
-                        <i class="fas fa-edit"></i>
-                        輸入佛法
-                    </div>
-                    <textarea id="inputText" class="textarea" placeholder="請在此輸入您想要翻譯的佛法經文...&#10;&#10;例如：&#10;《歸敬儀》云：「經云：若人得聞常住二字，是人生生不墮惡趣。」"></textarea>
                 </div>
             </div>
 
@@ -333,17 +343,6 @@
                     </div>
                     <textarea id="questionsText" class="textarea" style="height: 300px;" placeholder="學習題綱將顯示在這裡..." readonly></textarea>
                 </div>
-            </div>
-
-            <div class="controls">
-                <button id="translateBtn" class="btn btn-primary">
-                    <i class="fas fa-magic"></i>
-                    開始AI生成
-                </button>
-                <button id="clearBtn" class="btn btn-secondary">
-                    <i class="fas fa-trash"></i>
-                    清除內容
-                </button>
             </div>
 
             <div id="loading" class="loading">
